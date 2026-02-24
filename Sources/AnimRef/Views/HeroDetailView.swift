@@ -76,7 +76,7 @@ struct HeroDetailView: View {
         withAnimation(.spring(response: 0.30, dampingFraction: 0.90)) {
             appeared = false
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.26) { onDismiss() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.21) { onDismiss() }
     }
 }
 
@@ -85,9 +85,10 @@ struct HeroDetailView: View {
 private struct DetailPage: View {
     let item: AnimationItem
 
-    @State private var copiedPrompt = false
-    @State private var copiedCode   = false
-    @State private var showCode     = false
+    @State private var copiedPrompt  = false
+    @State private var copiedCode    = false
+    @State private var showCode      = false
+    @State private var showSpringTip = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -151,11 +152,34 @@ private struct DetailPage: View {
                     }
 
                     ContentSection(title: "실제 앱에서 보면") {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 10) {
-                                ForEach(item.realApps, id: \.self) { app in
-                                    AppExampleTile(text: app)
+                        VStack(alignment: .leading, spacing: 12) {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(alignment: .top, spacing: 10) {
+                                    ForEach(item.realApps, id: \.self) { app in
+                                        AppExampleTile(text: app, isSelected: showSpringTip) {
+                                            withAnimation(.spring(response: 0.30, dampingFraction: 0.78)) {
+                                                showSpringTip.toggle()
+                                            }
+                                        }
+                                    }
                                 }
+                                .padding(.vertical, 2)
+                            }
+
+                            if showSpringTip && !item.properties.isEmpty {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("이 장면에서 쓰이는 값")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundStyle(Color.textTertiary)
+                                        .textCase(.uppercase)
+                                        .kerning(0.8)
+                                    VStack(spacing: 6) {
+                                        ForEach(item.properties, id: \.key) { prop in
+                                            PropRow(prop: prop)
+                                        }
+                                    }
+                                }
+                                .transition(.move(edge: .top).combined(with: .opacity))
                             }
                         }
                     }
@@ -185,7 +209,7 @@ private struct DetailPage: View {
                             Button {
                                 UIPasteboard.general.string = item.prompt
                                 withAnimation { copiedPrompt = true }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.44) {
                                     withAnimation { copiedPrompt = false }
                                 }
                             } label: {
@@ -241,7 +265,7 @@ private struct DetailPage: View {
                                 Button {
                                     UIPasteboard.general.string = item.swiftui
                                     withAnimation { copiedCode = true }
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.44) {
                                         withAnimation { copiedCode = false }
                                     }
                                 } label: {
@@ -274,27 +298,37 @@ private struct DetailPage: View {
 
 private struct AppExampleTile: View {
     let text: String
+    var isSelected: Bool = false
+    var onTap: () -> Void = {}
 
     var body: some View {
-        VStack(spacing: 7) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 9)
-                    .fill(Color(red: 0.97, green: 0.97, blue: 0.96))
-                RoundedRectangle(cornerRadius: 9)
-                    .stroke(Color.cardBorder, lineWidth: 1)
-                MiniAnimScene(text: text)
-                    .frame(width: 56, height: 48)
-                    .clipped()
-            }
-            .frame(width: 68, height: 58)
+        Button(action: onTap) {
+            VStack(alignment: .center, spacing: 7) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 9)
+                        .fill(Color(red: 0.97, green: 0.97, blue: 0.96))
+                    RoundedRectangle(cornerRadius: 9)
+                        .stroke(isSelected ? Color.textSecondary : Color.cardBorder,
+                                lineWidth: isSelected ? 1.5 : 1)
+                    MiniAnimScene(text: text)
+                        .frame(width: 56, height: 48)
+                        .clipped()
+                }
+                .frame(width: 68, height: 58)
 
-            Text(text)
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(Color.textTertiary)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .frame(width: 72)
+                Text(text)
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(Color.textTertiary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(width: 72, alignment: .top)
+            }
+            .frame(width: 76, height: 98, alignment: .top)  // ← fixed height, top-aligned
         }
+        .buttonStyle(.plain)
+        .scaleEffect(isSelected ? 0.97 : 1.0)
+        .animation(.spring(response: 0.25, dampingFraction: 0.70), value: isSelected)
     }
 }
 
@@ -351,8 +385,8 @@ private struct MiniHeart: View {
             .foregroundStyle(mc.opacity(0.25))
             .scaleEffect(popped ? 1.35 : 0.85)
             .animation(.spring(response: 0.28, dampingFraction: 0.52), value: popped)
-            .onAppear { Timer.scheduledTimer(withTimeInterval: 1.4, repeats: true) { _ in
-                popped = true; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { popped = false }
+            .onAppear { Timer.scheduledTimer(withTimeInterval: 1.12, repeats: true) { _ in
+                popped = true; DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) { popped = false }
             }}
     }
 }
@@ -366,8 +400,8 @@ private struct MiniButton: View {
             .frame(width: 38, height: 16)
             .scaleEffect(pressed ? 0.88 : 1.0)
             .animation(.spring(response: 0.22, dampingFraction: 0.55), value: pressed)
-            .onAppear { Timer.scheduledTimer(withTimeInterval: 1.4, repeats: true) { _ in
-                pressed = true; DispatchQueue.main.asyncAfter(deadline: .now() + 0.38) { pressed = false }
+            .onAppear { Timer.scheduledTimer(withTimeInterval: 1.12, repeats: true) { _ in
+                pressed = true; DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { pressed = false }
             }}
     }
 }
@@ -394,9 +428,9 @@ private struct MiniPin: View {
                 LinearKeyframe(0,   duration: 0.04)
             }
         }
-        .onAppear { Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in
             err = true; trigger.toggle()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { err = false }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) { err = false }
         }}
     }
 }
@@ -463,7 +497,7 @@ private struct MiniBottomSheet: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.72), value: shown)
-        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.8, repeats: true) { _ in shown.toggle() }}
+        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.44, repeats: true) { _ in shown.toggle() }}
     }
 }
 
@@ -485,9 +519,9 @@ private struct MiniList: View {
                 .animation(.spring(response: 0.35, dampingFraction: 0.72).delay(Double(i) * 0.07), value: appeared)
             }
         }
-        .onAppear { Timer.scheduledTimer(withTimeInterval: 2.2, repeats: true) { _ in
-            appeared = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { appeared = true }
-        }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { appeared = true }}
+        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.76, repeats: true) { _ in
+            appeared = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { appeared = true }
+        }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) { appeared = true }}
     }
 }
 
@@ -508,9 +542,9 @@ private struct MiniBadge: View {
             }
         }
         .animation(.spring(bounce: 0.5), value: show)
-        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in
-            show = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { show = true }
-        }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { show = true }}
+        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.28, repeats: true) { _ in
+            show = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) { show = true }
+        }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { show = true }}
     }
 }
 
@@ -540,9 +574,9 @@ private struct MiniProgress: View {
             RoundedRectangle(cornerRadius: 3).fill(mc.opacity(0.32)).frame(width: 40 * progress, height: 5)
         }
         .animation(.easeInOut(duration: 1.2), value: progress)
-        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.8, repeats: true) { _ in
-            progress = 0; DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { progress = 1.0 }
-        }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { progress = 1.0 }}
+        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.44, repeats: true) { _ in
+            progress = 0; DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { progress = 1.0 }
+        }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { progress = 1.0 }}
     }
 }
 
@@ -558,7 +592,7 @@ private struct MiniTransition: View {
             }
         }
         .animation(.easeInOut(duration: 0.5), value: shown)
-        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in shown.toggle() }}
+        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.28, repeats: true) { _ in shown.toggle() }}
     }
 }
 
@@ -580,12 +614,12 @@ private struct MiniChat: View {
             .opacity(step >= 2 ? 1 : 0).offset(x: step >= 2 ? 0 : 10)
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.75), value: step)
-        .onAppear { Timer.scheduledTimer(withTimeInterval: 2.4, repeats: true) { _ in
+        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.92, repeats: true) { _ in
             step = 0
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { step = 1 }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { step = 2 }
-        }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { step = 1 }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { step = 2 }}
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { step = 1 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) { step = 2 }
+        }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { step = 1 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) { step = 2 }}
     }
 }
 

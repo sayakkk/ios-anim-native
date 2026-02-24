@@ -68,9 +68,9 @@ struct ScaleDemo: View {
             }
         }
         .onAppear {
-            Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in
+            Timer.scheduledTimer(withTimeInterval: 1.28, repeats: true) { _ in
                 pressed = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { pressed = false }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) { pressed = false }
             }
         }
     }
@@ -84,7 +84,7 @@ struct SpringDemo: View {
             .offset(y: up ? -26 : 26)
             .animation(.spring(response: 0.42, dampingFraction: 0.52), value: up)
             .onAppear {
-                Timer.scheduledTimer(withTimeInterval: 1.8, repeats: true) { _ in up.toggle() }
+                Timer.scheduledTimer(withTimeInterval: 1.44, repeats: true) { _ in up.toggle() }
             }
     }
 }
@@ -97,7 +97,7 @@ struct BouncyDemo: View {
             .scaleEffect(big ? 1.55 : 0.45)
             .animation(.bouncy(duration: 0.5, extraBounce: 0.28), value: big)
             .onAppear {
-                Timer.scheduledTimer(withTimeInterval: 1.8, repeats: true) { _ in big.toggle() }
+                Timer.scheduledTimer(withTimeInterval: 1.44, repeats: true) { _ in big.toggle() }
             }
     }
 }
@@ -110,7 +110,7 @@ struct FadeDemo: View {
             .opacity(visible ? 1 : 0.05)
             .animation(.easeInOut(duration: 0.9), value: visible)
             .onAppear {
-                Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in visible.toggle() }
+                Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { _ in visible.toggle() }
             }
     }
 }
@@ -133,7 +133,7 @@ struct SlideDemo: View {
         }
         .animation(.spring(response: 0.38, dampingFraction: 0.70), value: shown)
         .onAppear {
-            Timer.scheduledTimer(withTimeInterval: 1.8, repeats: true) { _ in shown.toggle() }
+            Timer.scheduledTimer(withTimeInterval: 1.44, repeats: true) { _ in shown.toggle() }
         }
     }
 }
@@ -184,10 +184,10 @@ struct ShakeDemo: View {
             }
         }
         .onAppear {
-            Timer.scheduledTimer(withTimeInterval: 2.2, repeats: true) { _ in
+            Timer.scheduledTimer(withTimeInterval: 1.76, repeats: true) { _ in
                 isError = true
                 trigger.toggle()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.44) {
                     isError = false
                 }
             }
@@ -234,11 +234,11 @@ struct StaggerDemo: View {
             }
         }
         .onAppear {
-            Timer.scheduledTimer(withTimeInterval: 2.4, repeats: true) { _ in
+            Timer.scheduledTimer(withTimeInterval: 1.92, repeats: true) { _ in
                 appeared = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { appeared = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { appeared = true }
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { appeared = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { appeared = true }
         }
     }
 }
@@ -278,11 +278,11 @@ struct PopInDemo: View {
         }
         .animation(.spring(bounce: 0.52), value: show)
         .onAppear {
-            Timer.scheduledTimer(withTimeInterval: 1.8, repeats: true) { _ in
+            Timer.scheduledTimer(withTimeInterval: 1.44, repeats: true) { _ in
                 show = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { show = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) { show = true }
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { show = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { show = true }
         }
     }
 }
@@ -300,9 +300,9 @@ struct RubberBandDemo: View {
                 .offset(y: offset)
         }
         .onAppear {
-            Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+            Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in
                 withAnimation(.linear(duration: 0.5)) { offset = 32 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.44) {
                     withAnimation(.spring(response: 0.38, dampingFraction: 0.52)) { offset = 0 }
                 }
             }
@@ -324,7 +324,7 @@ struct EaseDemo: View {
                 .animation(.easeInOut(duration: 0.82), value: moved)
         }
         .onAppear {
-            Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in moved.toggle() }
+            Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { _ in moved.toggle() }
         }
     }
 }
