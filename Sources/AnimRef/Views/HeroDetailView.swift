@@ -94,7 +94,7 @@ private struct DetailPage: View {
             VStack(alignment: .leading, spacing: 0) {
 
                 // ── Animation only — isolated white card ──────────
-                let demoH = UIScreen.main.bounds.height * 0.58
+                let demoH = UIScreen.main.bounds.height * 0.47
                 ZStack(alignment: .bottomLeading) {
                     AnimationDemoView(id: item.id)
                         .frame(height: demoH)

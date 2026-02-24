@@ -8,22 +8,25 @@ struct AnimationDemoView: View {
     var body: some View {
         ZStack {
             Color(red: 0.97, green: 0.97, blue: 0.96)  // off-white thumbnail bg
-            switch id {
-            case "scale":         ScaleDemo()
-            case "spring":        SpringDemo()
-            case "bouncy":        BouncyDemo()
-            case "fade":          FadeDemo()
-            case "slide":         SlideDemo()
-            case "shake":         ShakeDemo()
-            case "pulse":         PulseDemo()
-            case "stagger":       StaggerDemo()
-            case "wave":          WaveDemo()
-            case "pop-in":        PopInDemo()
-            case "rubber-band":   RubberBandDemo()
-            case "ease":          EaseDemo()
-            case "linear":        LinearDemo()
-            default:              DefaultDemo()
+            Group {
+                switch id {
+                case "scale":         ScaleDemo()
+                case "spring":        SpringDemo()
+                case "bouncy":        BouncyDemo()
+                case "fade":          FadeDemo()
+                case "slide":         SlideDemo()
+                case "shake":         ShakeDemo()
+                case "pulse":         PulseDemo()
+                case "stagger":       StaggerDemo()
+                case "wave":          WaveDemo()
+                case "pop-in":        PopInDemo()
+                case "rubber-band":   RubberBandDemo()
+                case "ease":          EaseDemo()
+                case "linear":        LinearDemo()
+                default:              DefaultDemo()
+                }
             }
+            .scaleEffect(1.2)
         }
     }
 }
