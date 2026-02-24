@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Scroll offset tracking
+// MARK: - Scroll offset
 
 private struct ScrollOffsetKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
@@ -14,120 +14,69 @@ struct HeroDetailView: View {
     @Binding var currentIndex: Int
     var onDismiss: () -> Void
 
-    @State private var appeared = false
-    @State private var tabSelection: Int
-    @State private var scrollAtTop = true
-    @GestureState private var pullOffset: CGFloat = 0
+    @State private var appeared  = false
+    @GestureState private var swipeDelta: CGFloat = 0
 
-    private let dismissThreshold: CGFloat = 88
+    private let dismissThreshold: CGFloat = 80
 
-    init(sectionItems: [AnimationItem], currentIndex: Binding<Int>, onDismiss: @escaping () -> Void) {
-        self.sectionItems = sectionItems
-        self._currentIndex = currentIndex
-        self.onDismiss = onDismiss
-        self._tabSelection = State(initialValue: currentIndex.wrappedValue)
-    }
+    private var item: AnimationItem { sectionItems[min(currentIndex, sectionItems.count - 1)] }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            // ── Full-screen bg ─────────────────────────────
+        ZStack(alignment: .topTrailing) {
             Color.appBg.ignoresSafeArea()
 
-            // ── Paged content ──────────────────────────────
-            TabView(selection: $tabSelection) {
-                ForEach(Array(sectionItems.enumerated()), id: \.offset) { idx, item in
-                    DetailPage(
-                        item: item,
-                        onScrollOffset: { offset in
-                            if idx == tabSelection { scrollAtTop = offset >= -6 }
-                        },
-                        onDismiss: dismiss
-                    )
-                    .tag(idx)
-                }
-            }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .offset(y: max(0, pullOffset * 0.55))
-            .gesture(
-                scrollAtTop
-                ? DragGesture()
-                    .updating($pullOffset) { val, state, _ in
-                        if val.translation.height > 0 { state = val.translation.height }
-                    }
-                    .onEnded { val in
-                        if val.translation.height > dismissThreshold { dismiss() }
-                    }
-                : nil
-            )
-
-            // ── Top bar ────────────────────────────────────
-            HStack {
-                Spacer()
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(Color.textSecondary)
-                        .frame(width: 32, height: 32)
-                        .background(Color.white.opacity(0.9))
-                        .clipShape(Circle())
-                        .shadow(color: .black.opacity(0.08), radius: 4, y: 1)
-                }
-                .buttonStyle(.plain)
-                .padding(.trailing, 16)
-                .padding(.top, 56)
-            }
-
-            // ── Page dots ──────────────────────────────────
-            if sectionItems.count > 1 {
-                VStack {
-                    Spacer()
-                    HStack(spacing: 5) {
-                        ForEach(0..<sectionItems.count, id: \.self) { i in
-                            Capsule()
-                                .fill(i == tabSelection ? Color.textPrimary : Color.textTertiary.opacity(0.4))
-                                .frame(width: i == tabSelection ? 18 : 5, height: 5)
-                                .animation(.spring(response: 0.28, dampingFraction: 0.72), value: tabSelection)
+            DetailPage(item: item)
+                .offset(x: max(0, swipeDelta * 0.65))
+                .gesture(
+                    DragGesture()
+                        .updating($swipeDelta) { val, state, _ in
+                            let isH = abs(val.translation.width) > abs(val.translation.height)
+                            if isH && val.translation.width > 0 { state = val.translation.width }
                         }
-                    }
-                    .padding(.bottom, 24)
-                }
-            }
+                        .onEnded { val in
+                            let isH = abs(val.translation.width) > abs(val.translation.height)
+                            let fast = val.predictedEndTranslation.width > 200
+                            if isH && (val.translation.width > dismissThreshold || fast) {
+                                dismiss()
+                            }
+                        }
+                )
 
-            // ── Pull hint ──────────────────────────────────
-            if pullOffset > 12 {
-                VStack {
-                    Label("내려서 닫기", systemImage: "chevron.down")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color.textSecondary.opacity(min(1, Double(pullOffset) / Double(dismissThreshold))))
-                        .padding(.vertical, 7).padding(.horizontal, 13)
-                        .background(Color.white.opacity(0.9))
-                        .clipShape(Capsule())
-                        .shadow(color: .black.opacity(0.06), radius: 4, y: 1)
-                        .padding(.top, 12)
-                    Spacer()
-                }
+            // Close button
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(Color.textSecondary)
+                    .frame(width: 32, height: 32)
+                    .background(Color.white.opacity(0.9))
+                    .clipShape(Circle())
+                    .shadow(color: .black.opacity(0.07), radius: 4, y: 1)
             }
+            .buttonStyle(.plain)
+            .padding(.trailing, 16)
+            .padding(.top, 56)
         }
-        // ── Clean spring presentation ──────────────────────
+        .ignoresSafeArea()
+        // Smooth spring presentation (no jitter)
         .scaleEffect(appeared ? 1.0 : 0.94)
         .opacity(appeared ? 1.0 : 0)
         .onAppear {
-            withAnimation(.spring(response: 0.38, dampingFraction: 0.88)) {
+            withAnimation(.spring(response: 0.36, dampingFraction: 0.90)) {
                 appeared = true
             }
         }
-        .onChange(of: tabSelection) { newVal in
-            currentIndex = newVal
-        }
+        // Slide feedback while swiping
+        .shadow(
+            color: .black.opacity(swipeDelta > 0 ? 0.08 : 0),
+            radius: 20, x: -4, y: 0
+        )
     }
 
     private func dismiss() {
-        withAnimation(.spring(response: 0.32, dampingFraction: 0.88)) {
+        withAnimation(.spring(response: 0.30, dampingFraction: 0.90)) {
             appeared = false
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
-            onDismiss()
-        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.26) { onDismiss() }
     }
 }
 
@@ -135,8 +84,6 @@ struct HeroDetailView: View {
 
 private struct DetailPage: View {
     let item: AnimationItem
-    var onScrollOffset: (CGFloat) -> Void
-    var onDismiss: () -> Void
 
     @State private var copiedPrompt = false
     @State private var copiedCode   = false
@@ -145,61 +92,56 @@ private struct DetailPage: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
-                // Scroll tracker
-                GeometryReader { geo in
-                    Color.clear.preference(
-                        key: ScrollOffsetKey.self,
-                        value: geo.frame(in: .named("scroll")).minY
-                    )
-                }
-                .frame(height: 0)
 
-                // ── Top white card ────────────────────────
-                VStack(alignment: .leading, spacing: 0) {
-
-                    // Demo
+                // ── Animation only — isolated white card ──────────
+                ZStack(alignment: .bottomLeading) {
                     AnimationDemoView(id: item.id)
-                        .frame(height: 230)
-                        .overlay(alignment: .bottomLeading) {
-                            Text(item.situationCategory)
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundStyle(Color.textSecondary)
-                                .padding(.horizontal, 10).padding(.vertical, 4)
-                                .background(Color.white.opacity(0.88))
-                                .clipShape(Capsule())
-                                .padding(14)
-                        }
+                        .frame(height: 240)
 
-                    // Header
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(item.name)
-                            .font(.system(size: 28, weight: .black))
-                            .foregroundStyle(Color.textPrimary)
-
-                        Text(item.feel)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Color.textSecondary)
-
-                        Text(item.feelDesc)
-                            .font(.system(size: 13))
-                            .foregroundStyle(Color.textTertiary)
-                            .lineSpacing(5)
-                    }
-                    .padding(.horizontal, 18)
-                    .padding(.top, 18)
-                    .padding(.bottom, 22)
+                    Text(item.situationCategory)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Color.textSecondary)
+                        .padding(.horizontal, 10).padding(.vertical, 4)
+                        .background(Color.white.opacity(0.88))
+                        .clipShape(Capsule())
+                        .padding(14)
                 }
-                .background(Color.white)
+                .background(Color(red: 0.97, green: 0.97, blue: 0.96))
                 .clipShape(.rect(
-                    topLeadingRadius: 0, bottomLeadingRadius: 20,
-                    bottomTrailingRadius: 20, topTrailingRadius: 0
+                    topLeadingRadius: 0, bottomLeadingRadius: 22,
+                    bottomTrailingRadius: 22, topTrailingRadius: 0
                 ))
                 .shadow(color: .black.opacity(0.07), radius: 12, x: 0, y: 6)
 
-                // ── Content sections ──────────────────────
-                VStack(alignment: .leading, spacing: 24) {
+                // ── Title block ───────────────────────────────────
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(item.name)
+                        .font(.system(size: 30, weight: .black))
+                        .foregroundStyle(Color.textPrimary)
 
-                    // 언제 써요?
+                    Text(item.feel)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.textSecondary)
+
+                    Text(item.feelDesc)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.textTertiary)
+                        .lineSpacing(5)
+                        .padding(.top, 2)
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 22)
+                .padding(.bottom, 8)
+
+                Divider()
+                    .overlay(Color.divider)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 14)
+                    .padding(.bottom, 2)
+
+                // ── Content sections ──────────────────────────────
+                VStack(alignment: .leading, spacing: 26) {
+
                     ContentSection(title: "언제 써요?") {
                         Text(item.when)
                             .font(.system(size: 14))
@@ -207,24 +149,16 @@ private struct DetailPage: View {
                             .lineSpacing(5)
                     }
 
-                    // 실제 앱
                     ContentSection(title: "실제 앱에서 보면") {
                         ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 7) {
+                            HStack(spacing: 10) {
                                 ForEach(item.realApps, id: \.self) { app in
-                                    Text(app)
-                                        .font(.system(size: 11, weight: .medium))
-                                        .foregroundStyle(Color.textSecondary)
-                                        .padding(.horizontal, 10).padding(.vertical, 5)
-                                        .background(Color.white)
-                                        .clipShape(Capsule())
-                                        .overlay(Capsule().stroke(Color.cardBorder, lineWidth: 1))
+                                    AppExampleTile(text: app)
                                 }
                             }
                         }
                     }
 
-                    // 세부조절 옵션
                     if !item.properties.isEmpty {
                         ContentSection(title: "세부조절 옵션") {
                             VStack(spacing: 8) {
@@ -235,7 +169,6 @@ private struct DetailPage: View {
                         }
                     }
 
-                    // AI 프롬프트
                     ContentSection(title: "AI 프롬프트") {
                         VStack(alignment: .leading, spacing: 12) {
                             Text(item.prompt)
@@ -262,14 +195,12 @@ private struct DetailPage: View {
                                     .padding(.horizontal, 16).padding(.vertical, 9)
                                     .background(copiedPrompt ? Color.textPrimary : Color.white)
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(Color.cardBorder, lineWidth: 1)
-                                    )
+                                    .overlay(RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color.cardBorder, lineWidth: 1))
                             }
                             .buttonStyle(.plain)
                             .scaleEffect(copiedPrompt ? 0.96 : 1.0)
-                            .animation(.spring(response: 0.28, dampingFraction: 0.65), value: copiedPrompt)
+                            .animation(.spring(response: 0.25, dampingFraction: 0.65), value: copiedPrompt)
                         }
                         .padding(14)
                         .background(Color.white)
@@ -277,7 +208,7 @@ private struct DetailPage: View {
                         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.cardBorder, lineWidth: 1))
                     }
 
-                    // SwiftUI 코드
+                    // SwiftUI code toggle
                     VStack(alignment: .leading, spacing: 10) {
                         Button {
                             withAnimation(.spring(response: 0.28, dampingFraction: 0.80)) {
@@ -329,18 +260,274 @@ private struct DetailPage: View {
                     }
                 }
                 .padding(.horizontal, 18)
-                .padding(.top, 26)
+                .padding(.top, 24)
                 .padding(.bottom, 80)
             }
         }
-        .coordinateSpace(name: "scroll")
-        .onPreferenceChange(ScrollOffsetKey.self) { onScrollOffset($0) }
         .background(Color.appBg)
         .ignoresSafeArea(edges: .top)
     }
 }
 
-// MARK: - Subviews
+// MARK: - App example tile (silhouette + label)
+
+private struct AppExampleTile: View {
+    let text: String
+
+    var body: some View {
+        VStack(spacing: 7) {
+            SceneSilhouette(text: text)
+                .frame(width: 48, height: 40)
+            Text(text)
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(Color.textTertiary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .frame(width: 60)
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 4)
+    }
+}
+
+// MARK: - Scene silhouette
+
+private struct SceneSilhouette: View {
+    let text: String
+
+    private enum Kind {
+        case heart, button, pin, waveform, list, bottomSheet, badge, pullRefresh, spinner, progress, transition, chat
+    }
+
+    private var kind: Kind {
+        let s = text.lowercased()
+        if s.contains("하트") || s.contains("좋아요") { return .heart }
+        if s.contains("비밀번호") || s.contains("핀") || s.contains("잠금") { return .pin }
+        if s.contains("음성") || s.contains("siri") || s.contains("재생 바") || s.contains("spotify") { return .waveform }
+        if s.contains("당겨") || s.contains("pull") { return .pullRefresh }
+        if s.contains("시트") || s.contains("알림 센터") { return .bottomSheet }
+        if s.contains("설정") || s.contains("리스트") || s.contains("목록") || s.contains("추천") { return .list }
+        if s.contains("배지") || s.contains("뱃지") || s.contains("badge") { return .badge }
+        if s.contains("로딩") || s.contains("스피너") || s.contains("연결") || s.contains("페어링") { return .spinner }
+        if s.contains("프로그레스") || s.contains("progress") { return .progress }
+        if s.contains("화면 전환") || s.contains("전환") || s.contains("화면") { return .transition }
+        if s.contains("카카오") || s.contains("메시지") || s.contains("채팅") { return .chat }
+        return .button
+    }
+
+    private let c = Color(red: 0.13, green: 0.12, blue: 0.11)
+
+    var body: some View {
+        ZStack {
+            switch kind {
+            case .heart:       HeartSilhouette(c: c)
+            case .button:      ButtonSilhouette(c: c)
+            case .pin:         PinSilhouette(c: c)
+            case .waveform:    WaveformSilhouette(c: c)
+            case .pullRefresh: PullRefreshSilhouette(c: c)
+            case .bottomSheet: BottomSheetSilhouette(c: c)
+            case .list:        ListSilhouette(c: c)
+            case .badge:       BadgeSilhouette(c: c)
+            case .spinner:     SpinnerSilhouette(c: c)
+            case .progress:    ProgressSilhouette(c: c)
+            case .transition:  TransitionSilhouette(c: c)
+            case .chat:        ChatSilhouette(c: c)
+            }
+        }
+    }
+}
+
+// Individual silhouette shapes
+private struct HeartSilhouette: View {
+    let c: Color
+    var body: some View {
+        Image(systemName: "heart.fill")
+            .font(.system(size: 22))
+            .foregroundStyle(c.opacity(0.22))
+    }
+}
+
+private struct ButtonSilhouette: View {
+    let c: Color
+    var body: some View {
+        VStack(spacing: 5) {
+            RoundedRectangle(cornerRadius: 5)
+                .fill(c.opacity(0.15))
+                .frame(width: 36, height: 16)
+            // tap ring
+            Circle()
+                .stroke(c.opacity(0.20), lineWidth: 1.2)
+                .frame(width: 10, height: 10)
+        }
+    }
+}
+
+private struct PinSilhouette: View {
+    let c: Color
+    var body: some View {
+        HStack(spacing: 5) {
+            ForEach(0..<4) { _ in
+                Circle()
+                    .fill(c.opacity(0.25))
+                    .frame(width: 7, height: 7)
+            }
+        }
+    }
+}
+
+private struct WaveformSilhouette: View {
+    let c: Color
+    let heights: [CGFloat] = [8, 18, 26, 20, 12, 22, 16, 10]
+    var body: some View {
+        HStack(alignment: .center, spacing: 3) {
+            ForEach(Array(heights.enumerated()), id: \.offset) { _, h in
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(c.opacity(0.22))
+                    .frame(width: 3, height: h)
+            }
+        }
+    }
+}
+
+private struct PullRefreshSilhouette: View {
+    let c: Color
+    var body: some View {
+        VStack(spacing: 3) {
+            Image(systemName: "arrow.down")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(c.opacity(0.22))
+            VStack(spacing: 3) {
+                ForEach(0..<3) { _ in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(c.opacity(0.15))
+                        .frame(width: 32, height: 5)
+                }
+            }
+        }
+    }
+}
+
+private struct BottomSheetSilhouette: View {
+    let c: Color
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            // phone frame
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(c.opacity(0.15), lineWidth: 1)
+                .frame(width: 28, height: 36)
+            // sheet rising
+            RoundedRectangle(cornerRadius: 4)
+                .fill(c.opacity(0.18))
+                .frame(width: 28, height: 16)
+        }
+    }
+}
+
+private struct ListSilhouette: View {
+    let c: Color
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            ForEach(0..<4) { i in
+                HStack(spacing: 4) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(c.opacity(0.20))
+                        .frame(width: i == 0 ? 28 : CGFloat(16 + i * 4), height: 5)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 6, weight: .semibold))
+                        .foregroundStyle(c.opacity(0.15))
+                }
+                .frame(width: 40)
+            }
+        }
+    }
+}
+
+private struct BadgeSilhouette: View {
+    let c: Color
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(c.opacity(0.15))
+                .frame(width: 28, height: 28)
+            Circle()
+                .fill(c.opacity(0.35))
+                .frame(width: 11, height: 11)
+                .offset(x: 3, y: -3)
+        }
+    }
+}
+
+private struct SpinnerSilhouette: View {
+    let c: Color
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(c.opacity(0.10), lineWidth: 2.5)
+                .frame(width: 24, height: 24)
+            Circle()
+                .trim(from: 0, to: 0.72)
+                .stroke(c.opacity(0.28), style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                .frame(width: 24, height: 24)
+                .rotationEffect(.degrees(-60))
+        }
+    }
+}
+
+private struct ProgressSilhouette: View {
+    let c: Color
+    var body: some View {
+        VStack(spacing: 4) {
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(c.opacity(0.12))
+                    .frame(width: 38, height: 5)
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(c.opacity(0.30))
+                    .frame(width: 22, height: 5)
+            }
+        }
+    }
+}
+
+private struct TransitionSilhouette: View {
+    let c: Color
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 4)
+                .fill(c.opacity(0.10))
+                .frame(width: 24, height: 32)
+                .offset(x: -6)
+            RoundedRectangle(cornerRadius: 4)
+                .fill(c.opacity(0.22))
+                .frame(width: 24, height: 32)
+                .offset(x: 6)
+        }
+    }
+}
+
+private struct ChatSilhouette: View {
+    let c: Color
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            // received
+            HStack(spacing: 3) {
+                Circle().fill(c.opacity(0.18)).frame(width: 10, height: 10)
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(c.opacity(0.15)).frame(width: 22, height: 10)
+            }
+            // sent (right)
+            HStack(spacing: 3) {
+                Spacer()
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(c.opacity(0.22)).frame(width: 18, height: 10)
+            }
+            .frame(width: 44)
+        }
+    }
+}
+
+// MARK: - Reusable sub-components
 
 private struct ContentSection<Content: View>: View {
     let title: String
@@ -359,14 +546,12 @@ private struct ContentSection<Content: View>: View {
 
 private struct PropRow: View {
     let prop: AnimProperty
-
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 8) {
                 Text(prop.label)
                     .font(.system(size: 14, weight: .black))
                     .foregroundStyle(Color.textPrimary)
-
                 Text(prop.key)
                     .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
                     .foregroundStyle(Color.textSecondary)

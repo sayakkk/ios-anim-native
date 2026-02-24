@@ -136,46 +136,80 @@ struct SlideDemo: View {
 }
 
 // MARK: - Shake
+private let errorRed = Color(red: 0.88, green: 0.20, blue: 0.18)
+
 struct ShakeDemo: View {
-    @State private var trigger = false
+    @State private var trigger  = false
+    @State private var isError  = false
+
     var body: some View {
-        rect(72, 36)
-            .keyframeAnimator(initialValue: 0.0, trigger: trigger) { v, x in
-                v.offset(x: x)
-            } keyframes: { _ in
-                KeyframeTrack {
-                    LinearKeyframe(0,    duration: 0.04)
-                    LinearKeyframe(-11,  duration: 0.07)
-                    LinearKeyframe(11,   duration: 0.07)
-                    LinearKeyframe(-7,   duration: 0.06)
-                    LinearKeyframe(7,    duration: 0.06)
-                    LinearKeyframe(-3,   duration: 0.05)
-                    LinearKeyframe(0,    duration: 0.05)
+        ZStack {
+            // subtle red bg flash
+            RoundedRectangle(cornerRadius: 8)
+                .fill(errorRed.opacity(isError ? 0.10 : 0))
+                .frame(width: 80, height: 44)
+                .animation(.easeOut(duration: 0.25), value: isError)
+
+            // field outline
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(isError ? errorRed : ink, lineWidth: isError ? 1.8 : strokeW)
+                .frame(width: 80, height: 44)
+                .animation(.easeOut(duration: 0.18), value: isError)
+
+            // dots
+            HStack(spacing: 6) {
+                ForEach(0..<5) { _ in
+                    Circle()
+                        .fill(isError ? errorRed : ink)
+                        .frame(width: 6, height: 6)
+                        .opacity(0.55)
                 }
             }
-            .onAppear {
-                Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
-                    trigger.toggle()
+            .animation(.easeOut(duration: 0.18), value: isError)
+        }
+        .keyframeAnimator(initialValue: 0.0, trigger: trigger) { v, x in
+            v.offset(x: x)
+        } keyframes: { _ in
+            KeyframeTrack {
+                LinearKeyframe(0,    duration: 0.04)
+                LinearKeyframe(-11,  duration: 0.07)
+                LinearKeyframe(11,   duration: 0.07)
+                LinearKeyframe(-7,   duration: 0.06)
+                LinearKeyframe(7,    duration: 0.06)
+                LinearKeyframe(-3,   duration: 0.05)
+                LinearKeyframe(0,    duration: 0.05)
+            }
+        }
+        .onAppear {
+            Timer.scheduledTimer(withTimeInterval: 2.2, repeats: true) { _ in
+                isError = true
+                trigger.toggle()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                    isError = false
                 }
             }
+        }
     }
 }
 
-// MARK: - Pulse
+// MARK: - Pulse (filled — breathing volume feel)
 struct PulseDemo: View {
     @State private var pulsing = false
     var body: some View {
         ZStack {
+            // outer halo
             Circle()
-                .stroke(ink.opacity(pulsing ? 0.08 : 0.25), lineWidth: strokeW)
-                .frame(width: 60, height: 60)
-                .scaleEffect(pulsing ? 1.45 : 0.85)
+                .fill(ink.opacity(pulsing ? 0.04 : 0.14))
+                .frame(width: 64, height: 64)
+                .scaleEffect(pulsing ? 1.38 : 0.82)
 
-            circle(34)
-                .scaleEffect(pulsing ? 1.12 : 0.92)
-                .opacity(pulsing ? 0.6 : 1.0)
+            // main filled circle
+            Circle()
+                .fill(ink.opacity(pulsing ? 0.28 : 0.62))
+                .frame(width: 38, height: 38)
+                .scaleEffect(pulsing ? 1.14 : 0.88)
         }
-        .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: pulsing)
+        .animation(.easeInOut(duration: 1.25).repeatForever(autoreverses: true), value: pulsing)
         .onAppear { pulsing = true }
     }
 }
