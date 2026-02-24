@@ -94,9 +94,10 @@ private struct DetailPage: View {
             VStack(alignment: .leading, spacing: 0) {
 
                 // ── Animation only — isolated white card ──────────
+                let demoH = UIScreen.main.bounds.height * 0.47
                 ZStack(alignment: .bottomLeading) {
                     AnimationDemoView(id: item.id)
-                        .frame(height: 240)
+                        .frame(height: demoH)
 
                     Text(item.situationCategory)
                         .font(.system(size: 10, weight: .semibold))
@@ -269,36 +270,42 @@ private struct DetailPage: View {
     }
 }
 
-// MARK: - App example tile (silhouette + label)
+// MARK: - App example tile (animated mini scene in border frame)
 
 private struct AppExampleTile: View {
     let text: String
 
     var body: some View {
         VStack(spacing: 7) {
-            SceneSilhouette(text: text)
-                .frame(width: 48, height: 40)
+            ZStack {
+                RoundedRectangle(cornerRadius: 9)
+                    .fill(Color(red: 0.97, green: 0.97, blue: 0.96))
+                RoundedRectangle(cornerRadius: 9)
+                    .stroke(Color.cardBorder, lineWidth: 1)
+                MiniAnimScene(text: text)
+                    .frame(width: 56, height: 48)
+                    .clipped()
+            }
+            .frame(width: 68, height: 58)
+
             Text(text)
                 .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(Color.textTertiary)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
-                .frame(width: 60)
+                .frame(width: 72)
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 4)
     }
 }
 
-// MARK: - Scene silhouette
+// MARK: - Mini animated scene dispatcher
 
-private struct SceneSilhouette: View {
+private struct MiniAnimScene: View {
     let text: String
 
     private enum Kind {
-        case heart, button, pin, waveform, list, bottomSheet, badge, pullRefresh, spinner, progress, transition, chat
+        case heart, button, pin, waveform, bottomSheet, list, badge, spinner, progress, transition, chat, pullRefresh
     }
-
     private var kind: Kind {
         let s = text.lowercased()
         if s.contains("하트") || s.contains("좋아요") { return .heart }
@@ -307,223 +314,278 @@ private struct SceneSilhouette: View {
         if s.contains("당겨") || s.contains("pull") { return .pullRefresh }
         if s.contains("시트") || s.contains("알림 센터") { return .bottomSheet }
         if s.contains("설정") || s.contains("리스트") || s.contains("목록") || s.contains("추천") { return .list }
-        if s.contains("배지") || s.contains("뱃지") || s.contains("badge") { return .badge }
+        if s.contains("배지") || s.contains("뱃지") { return .badge }
         if s.contains("로딩") || s.contains("스피너") || s.contains("연결") || s.contains("페어링") { return .spinner }
-        if s.contains("프로그레스") || s.contains("progress") { return .progress }
-        if s.contains("화면 전환") || s.contains("전환") || s.contains("화면") { return .transition }
-        if s.contains("카카오") || s.contains("메시지") || s.contains("채팅") { return .chat }
+        if s.contains("프로그레스") { return .progress }
+        if s.contains("화면 전환") || s.contains("전환") { return .transition }
+        if s.contains("카카오") || s.contains("메시지") { return .chat }
         return .button
     }
 
-    private let c = Color(red: 0.13, green: 0.12, blue: 0.11)
-
     var body: some View {
-        ZStack {
-            switch kind {
-            case .heart:       HeartSilhouette(c: c)
-            case .button:      ButtonSilhouette(c: c)
-            case .pin:         PinSilhouette(c: c)
-            case .waveform:    WaveformSilhouette(c: c)
-            case .pullRefresh: PullRefreshSilhouette(c: c)
-            case .bottomSheet: BottomSheetSilhouette(c: c)
-            case .list:        ListSilhouette(c: c)
-            case .badge:       BadgeSilhouette(c: c)
-            case .spinner:     SpinnerSilhouette(c: c)
-            case .progress:    ProgressSilhouette(c: c)
-            case .transition:  TransitionSilhouette(c: c)
-            case .chat:        ChatSilhouette(c: c)
-            }
+        switch kind {
+        case .heart:       MiniHeart()
+        case .button:      MiniButton()
+        case .pin:         MiniPin()
+        case .waveform:    MiniWaveform()
+        case .pullRefresh: MiniPullRefresh()
+        case .bottomSheet: MiniBottomSheet()
+        case .list:        MiniList()
+        case .badge:       MiniBadge()
+        case .spinner:     MiniSpinner()
+        case .progress:    MiniProgress()
+        case .transition:  MiniTransition()
+        case .chat:        MiniChat()
         }
     }
 }
 
-// Individual silhouette shapes
-private struct HeartSilhouette: View {
-    let c: Color
+private let mc = Color(red: 0.13, green: 0.12, blue: 0.11)
+
+// Heart — pop scale
+private struct MiniHeart: View {
+    @State private var popped = false
     var body: some View {
         Image(systemName: "heart.fill")
-            .font(.system(size: 22))
-            .foregroundStyle(c.opacity(0.22))
+            .font(.system(size: 20))
+            .foregroundStyle(mc.opacity(0.25))
+            .scaleEffect(popped ? 1.35 : 0.85)
+            .animation(.spring(response: 0.28, dampingFraction: 0.52), value: popped)
+            .onAppear { Timer.scheduledTimer(withTimeInterval: 1.4, repeats: true) { _ in
+                popped = true; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { popped = false }
+            }}
     }
 }
 
-private struct ButtonSilhouette: View {
-    let c: Color
+// Button — press scale
+private struct MiniButton: View {
+    @State private var pressed = false
     var body: some View {
-        VStack(spacing: 5) {
-            RoundedRectangle(cornerRadius: 5)
-                .fill(c.opacity(0.15))
-                .frame(width: 36, height: 16)
-            // tap ring
-            Circle()
-                .stroke(c.opacity(0.20), lineWidth: 1.2)
-                .frame(width: 10, height: 10)
-        }
+        RoundedRectangle(cornerRadius: 5)
+            .fill(mc.opacity(0.18))
+            .frame(width: 38, height: 16)
+            .scaleEffect(pressed ? 0.88 : 1.0)
+            .animation(.spring(response: 0.22, dampingFraction: 0.55), value: pressed)
+            .onAppear { Timer.scheduledTimer(withTimeInterval: 1.4, repeats: true) { _ in
+                pressed = true; DispatchQueue.main.asyncAfter(deadline: .now() + 0.38) { pressed = false }
+            }}
     }
 }
 
-private struct PinSilhouette: View {
-    let c: Color
+// Pin — shake left/right + red
+private struct MiniPin: View {
+    @State private var trigger = false
+    @State private var err = false
     var body: some View {
         HStack(spacing: 5) {
             ForEach(0..<4) { _ in
                 Circle()
-                    .fill(c.opacity(0.25))
+                    .fill(err ? Color(red: 0.88, green: 0.20, blue: 0.18).opacity(0.6) : mc.opacity(0.28))
                     .frame(width: 7, height: 7)
             }
         }
+        .keyframeAnimator(initialValue: 0.0, trigger: trigger) { v, x in v.offset(x: x) } keyframes: { _ in
+            KeyframeTrack {
+                LinearKeyframe(0,   duration: 0.03)
+                LinearKeyframe(-8,  duration: 0.06)
+                LinearKeyframe(8,   duration: 0.06)
+                LinearKeyframe(-5,  duration: 0.05)
+                LinearKeyframe(5,   duration: 0.05)
+                LinearKeyframe(0,   duration: 0.04)
+            }
+        }
+        .onAppear { Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+            err = true; trigger.toggle()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { err = false }
+        }}
     }
 }
 
-private struct WaveformSilhouette: View {
-    let c: Color
-    let heights: [CGFloat] = [8, 18, 26, 20, 12, 22, 16, 10]
+// Waveform — equalizer bars
+private struct MiniWaveform: View {
+    @State private var on = false
+    let bases: [CGFloat] = [0.08, 0.18, 0.06, 0.16, 0.10, 0.14, 0.08]
     var body: some View {
         HStack(alignment: .center, spacing: 3) {
-            ForEach(Array(heights.enumerated()), id: \.offset) { _, h in
+            ForEach(Array(bases.enumerated()), id: \.offset) { i, b in
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(c.opacity(0.22))
-                    .frame(width: 3, height: h)
+                    .fill(mc.opacity(0.28))
+                    .frame(width: 4, height: on ? CGFloat.random(in: 8...26) : b * 40 + 5)
+                    .animation(
+                        .easeInOut(duration: Double.random(in: 0.3...0.55))
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(i) * 0.08),
+                        value: on
+                    )
             }
         }
+        .onAppear { on = true }
     }
 }
 
-private struct PullRefreshSilhouette: View {
-    let c: Color
+// Pull to refresh — arrow + list pull
+private struct MiniPullRefresh: View {
+    @State private var pulling = false
     var body: some View {
-        VStack(spacing: 3) {
-            Image(systemName: "arrow.down")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(c.opacity(0.22))
+        VStack(spacing: 2) {
+            Image(systemName: "arrow.clockwise")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(mc.opacity(pulling ? 0.45 : 0.15))
+                .rotationEffect(.degrees(pulling ? 360 : 0))
+                .animation(.linear(duration: 0.7).repeatForever(autoreverses: false), value: pulling)
             VStack(spacing: 3) {
-                ForEach(0..<3) { _ in
+                ForEach(0..<3) { i in
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(c.opacity(0.15))
-                        .frame(width: 32, height: 5)
+                        .fill(mc.opacity(0.15))
+                        .frame(width: CGFloat(28 - i * 4), height: 4)
                 }
             }
+            .offset(y: pulling ? -4 : 0)
+            .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: pulling)
         }
+        .onAppear { pulling = true }
     }
 }
 
-private struct BottomSheetSilhouette: View {
-    let c: Color
+// Bottom sheet — slides up/down
+private struct MiniBottomSheet: View {
+    @State private var shown = false
     var body: some View {
         ZStack(alignment: .bottom) {
-            // phone frame
             RoundedRectangle(cornerRadius: 4)
-                .stroke(c.opacity(0.15), lineWidth: 1)
-                .frame(width: 28, height: 36)
-            // sheet rising
-            RoundedRectangle(cornerRadius: 4)
-                .fill(c.opacity(0.18))
-                .frame(width: 28, height: 16)
+                .stroke(mc.opacity(0.15), lineWidth: 1)
+                .frame(width: 34, height: 42)
+            if shown {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(mc.opacity(0.20))
+                    .frame(width: 34, height: 20)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
+        .animation(.spring(response: 0.4, dampingFraction: 0.72), value: shown)
+        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.8, repeats: true) { _ in shown.toggle() }}
     }
 }
 
-private struct ListSilhouette: View {
-    let c: Color
+// List — stagger appear
+private struct MiniList: View {
+    @State private var appeared = false
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             ForEach(0..<4) { i in
-                HStack(spacing: 4) {
+                HStack(spacing: 3) {
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(c.opacity(0.20))
-                        .frame(width: i == 0 ? 28 : CGFloat(16 + i * 4), height: 5)
+                        .fill(mc.opacity(0.22))
+                        .frame(width: CGFloat(20 + i * 3), height: 4)
                     Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 6, weight: .semibold))
-                        .foregroundStyle(c.opacity(0.15))
                 }
                 .frame(width: 40)
+                .opacity(appeared ? 1 : 0)
+                .offset(y: appeared ? 0 : 8)
+                .animation(.spring(response: 0.35, dampingFraction: 0.72).delay(Double(i) * 0.07), value: appeared)
             }
         }
+        .onAppear { Timer.scheduledTimer(withTimeInterval: 2.2, repeats: true) { _ in
+            appeared = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { appeared = true }
+        }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { appeared = true }}
     }
 }
 
-private struct BadgeSilhouette: View {
-    let c: Color
+// Badge — pop in/out
+private struct MiniBadge: View {
+    @State private var show = false
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(c.opacity(0.15))
-                .frame(width: 28, height: 28)
-            Circle()
-                .fill(c.opacity(0.35))
-                .frame(width: 11, height: 11)
-                .offset(x: 3, y: -3)
-        }
-    }
-}
-
-private struct SpinnerSilhouette: View {
-    let c: Color
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(c.opacity(0.10), lineWidth: 2.5)
-                .frame(width: 24, height: 24)
-            Circle()
-                .trim(from: 0, to: 0.72)
-                .stroke(c.opacity(0.28), style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                .frame(width: 24, height: 24)
-                .rotationEffect(.degrees(-60))
-        }
-    }
-}
-
-private struct ProgressSilhouette: View {
-    let c: Color
-    var body: some View {
-        VStack(spacing: 4) {
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(c.opacity(0.12))
-                    .frame(width: 38, height: 5)
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(c.opacity(0.30))
-                    .frame(width: 22, height: 5)
+            RoundedRectangle(cornerRadius: 6)
+                .fill(mc.opacity(0.15))
+                .frame(width: 26, height: 26)
+            if show {
+                Circle()
+                    .fill(mc.opacity(0.42))
+                    .frame(width: 11, height: 11)
+                    .offset(x: 4, y: -4)
+                    .transition(.scale(scale: 0.05).combined(with: .opacity))
             }
         }
+        .animation(.spring(bounce: 0.5), value: show)
+        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in
+            show = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { show = true }
+        }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { show = true }}
     }
 }
 
-private struct TransitionSilhouette: View {
-    let c: Color
+// Spinner — rotating arc
+private struct MiniSpinner: View {
+    @State private var rotating = false
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 4)
-                .fill(c.opacity(0.10))
-                .frame(width: 24, height: 32)
-                .offset(x: -6)
-            RoundedRectangle(cornerRadius: 4)
-                .fill(c.opacity(0.22))
-                .frame(width: 24, height: 32)
-                .offset(x: 6)
+            Circle().stroke(mc.opacity(0.10), lineWidth: 2).frame(width: 22, height: 22)
+            Circle()
+                .trim(from: 0, to: 0.7)
+                .stroke(mc.opacity(0.32), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                .frame(width: 22, height: 22)
+                .rotationEffect(.degrees(rotating ? 360 : 0))
+                .animation(.linear(duration: 1.0).repeatForever(autoreverses: false), value: rotating)
         }
+        .onAppear { rotating = true }
     }
 }
 
-private struct ChatSilhouette: View {
-    let c: Color
+// Progress — fill animation
+private struct MiniProgress: View {
+    @State private var progress: CGFloat = 0
+    var body: some View {
+        ZStack(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 3).fill(mc.opacity(0.10)).frame(width: 40, height: 5)
+            RoundedRectangle(cornerRadius: 3).fill(mc.opacity(0.32)).frame(width: 40 * progress, height: 5)
+        }
+        .animation(.easeInOut(duration: 1.2), value: progress)
+        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.8, repeats: true) { _ in
+            progress = 0; DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { progress = 1.0 }
+        }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { progress = 1.0 }}
+    }
+}
+
+// Transition — slide in
+private struct MiniTransition: View {
+    @State private var shown = false
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 4).fill(mc.opacity(0.10)).frame(width: 26, height: 34)
+            if shown {
+                RoundedRectangle(cornerRadius: 4).fill(mc.opacity(0.24)).frame(width: 26, height: 34)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.5), value: shown)
+        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in shown.toggle() }}
+    }
+}
+
+// Chat — bubbles appearing
+private struct MiniChat: View {
+    @State private var step = 0
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // received
-            HStack(spacing: 3) {
-                Circle().fill(c.opacity(0.18)).frame(width: 10, height: 10)
-                RoundedRectangle(cornerRadius: 5)
-                    .fill(c.opacity(0.15)).frame(width: 22, height: 10)
+            HStack(spacing: 2) {
+                Circle().fill(mc.opacity(0.18)).frame(width: 8, height: 8)
+                RoundedRectangle(cornerRadius: 4).fill(mc.opacity(0.15)).frame(width: 20, height: 8)
             }
-            // sent (right)
-            HStack(spacing: 3) {
+            .opacity(step >= 1 ? 1 : 0).offset(x: step >= 1 ? 0 : -10)
+            HStack(spacing: 2) {
                 Spacer()
-                RoundedRectangle(cornerRadius: 5)
-                    .fill(c.opacity(0.22)).frame(width: 18, height: 10)
+                RoundedRectangle(cornerRadius: 4).fill(mc.opacity(0.24)).frame(width: 16, height: 8)
             }
-            .frame(width: 44)
+            .frame(width: 40)
+            .opacity(step >= 2 ? 1 : 0).offset(x: step >= 2 ? 0 : 10)
         }
+        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: step)
+        .onAppear { Timer.scheduledTimer(withTimeInterval: 2.4, repeats: true) { _ in
+            step = 0
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { step = 1 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { step = 2 }
+        }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { step = 1 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { step = 2 }}
     }
 }
 
