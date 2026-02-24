@@ -11,6 +11,7 @@
 		A27AD94EA866489EB8BF570A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21A952BDF647407CB471585C /* ContentView.swift */; };
 		C96B11703FAF4B4BB353E0D6 /* AnimationItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA86B80CD32349B4978F42E2 /* AnimationItem.swift */; };
 		844EF2E07AB34FF594F5AE31 /* AnimationDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98A387F3AD774F3481B50B97 /* AnimationDemoView.swift */; };
+		CCDD1122334455667788CCDD /* HeroDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB1122334455667788AABB /* HeroDetailView.swift */; };
 		088742B589EF428EBA39AE03 /* AnimationCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F48F86CF564CC4B097B047 /* AnimationCardView.swift */; };
 /* End PBXBuildFile section */
 
@@ -20,6 +21,7 @@
 		21A952BDF647407CB471585C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ContentView.swift; path = Sources/AnimRef/ContentView.swift; sourceTree = SOURCE_ROOT; };
 		AA86B80CD32349B4978F42E2 /* AnimationItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AnimationItem.swift; path = Sources/AnimRef/Models/AnimationItem.swift; sourceTree = SOURCE_ROOT; };
 		98A387F3AD774F3481B50B97 /* AnimationDemoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AnimationDemoView.swift; path = Sources/AnimRef/Views/AnimationDemoView.swift; sourceTree = SOURCE_ROOT; };
+		AABB1122334455667788AABB /* HeroDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HeroDetailView.swift; path = Sources/AnimRef/Views/HeroDetailView.swift; sourceTree = SOURCE_ROOT; };
 		F0F48F86CF564CC4B097B047 /* AnimationCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AnimationCardView.swift; path = Sources/AnimRef/Views/AnimationCardView.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -73,6 +75,7 @@
 			isa = PBXGroup;
 			children = (
 				98A387F3AD774F3481B50B97 /* AnimationDemoView.swift */,
+				AABB1122334455667788AABB /* HeroDetailView.swift */,
 				F0F48F86CF564CC4B097B047 /* AnimationCardView.swift */,
 			);
 			name = Views;
@@ -145,6 +148,7 @@
 				A27AD94EA866489EB8BF570A /* ContentView.swift in Sources */,
 				C96B11703FAF4B4BB353E0D6 /* AnimationItem.swift in Sources */,
 				844EF2E07AB34FF594F5AE31 /* AnimationDemoView.swift in Sources */,
+				CCDD1122334455667788CCDD /* HeroDetailView.swift in Sources */,
 				088742B589EF428EBA39AE03 /* AnimationCardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

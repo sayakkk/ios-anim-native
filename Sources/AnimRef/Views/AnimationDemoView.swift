@@ -20,6 +20,8 @@ struct AnimationDemoView: View {
             case "wave":          WaveDemo()
             case "pop-in":        PopInDemo()
             case "rubber-band":   RubberBandDemo()
+            case "ease":          EaseDemo()
+            case "linear":        LinearDemo()
             default:              DefaultDemo()
             }
         }
@@ -265,6 +267,43 @@ struct RubberBandDemo: View {
                     }
                 }
             }
+    }
+}
+
+// MARK: - Ease
+struct EaseDemo: View {
+    @State private var moved = false
+    var body: some View {
+        dot()
+            .offset(x: moved ? 36 : -36)
+            .animation(.easeInOut(duration: 0.8), value: moved)
+            .onAppear {
+                Timer.scheduledTimer(withTimeInterval: 1.4, repeats: true) { _ in moved.toggle() }
+            }
+    }
+}
+
+// MARK: - Linear
+struct LinearDemo: View {
+    @State private var rotating = false
+    var body: some View {
+        ZStack {
+            Circle()
+                .trim(from: 0, to: 0.72)
+                .stroke(
+                    LinearGradient(colors: [accent, Color(red: 0.88, green: 0.36, blue: 0.16)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                )
+                .frame(width: 38, height: 38)
+                .rotationEffect(.degrees(rotating ? 360 : 0))
+                .animation(
+                    .linear(duration: 1.1).repeatForever(autoreverses: false),
+                    value: rotating
+                )
+                .shadow(color: accent.opacity(0.5), radius: 6)
+        }
+        .onAppear { rotating = true }
     }
 }
 

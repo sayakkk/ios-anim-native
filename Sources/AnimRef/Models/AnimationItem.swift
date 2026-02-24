@@ -1,5 +1,9 @@
 import SwiftUI
 
+// MARK: - Kind
+
+enum AnimKind { case basic, combo }
+
 // MARK: - Data Model
 
 struct AnimProperty {
@@ -9,6 +13,7 @@ struct AnimProperty {
 }
 
 struct AnimationItem: Identifiable {
+    let kind: AnimKind
     let id: String
     let name: String
     let situationCategory: String
@@ -24,38 +29,18 @@ struct AnimationItem: Identifiable {
 // MARK: - Seed Data
 
 struct AnimationData {
+
+    static let basics: [AnimationItem] = all.filter { $0.kind == .basic }
+    static let combos: [AnimationItem] = all.filter { $0.kind == .combo }
+
     static let all: [AnimationItem] = [
 
-        AnimationItem(
-            id: "scale",
-            name: "Scale (스케일)",
-            situationCategory: "👆 버튼 · 탭 반응",
-            feel: "눌리는 느낌",
-            feelDesc: "버튼을 탭했을 때 살짝 눌리는 물리적인 반응감",
-            when: "버튼, 카드, 아이콘을 탭했을 때",
-            realApps: ["트위터 하트 버튼 탭", "앱 아이콘 누를 때", "결제 버튼 확인"],
-            properties: [
-                AnimProperty(label: "크기", key: ".scaleEffect(0.92)", desc: "1.0이 원래 크기. 탭 반응엔 0.90~0.95가 자연스러워요"),
-                AnimProperty(label: "반응 방식", key: ".spring(response:dampingFraction:)", desc: "spring을 써야 진짜 눌리는 느낌이 남. easeInOut은 어색함"),
-            ],
-            swiftui: """
-@State var isPressed = false
-
-Button("확인") { }
-    .scaleEffect(isPressed ? 0.92 : 1.0)
-    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
-    .simultaneousGesture(
-        DragGesture(minimumDistance: 0)
-            .onChanged { _ in isPressed = true }
-            .onEnded { _ in isPressed = false }
-    )
-""",
-            prompt: "SwiftUI [버튼/카드]를 탭했을 때 살짝 눌리는 scale 피드백 애니메이션을 만들어줘. 자연스럽게."
-        ),
+        // ─── 기본 ───────────────────────────────────────────
 
         AnimationItem(
+            kind: .basic,
             id: "spring",
-            name: "Spring (스프링)",
+            name: "Spring",
             situationCategory: "📋 리스트 · 등장",
             feel: "통통 튀며 제자리 잡는 느낌",
             feelDesc: "iOS 앱 어디서나 느껴지는 그 살아있는 탄성감",
@@ -82,8 +67,9 @@ Button("확인") { }
         ),
 
         AnimationItem(
+            kind: .basic,
             id: "bouncy",
-            name: "Bouncy (바운시)",
+            name: "Bouncy",
             situationCategory: "📋 리스트 · 등장",
             feel: "고무공처럼 통통통 튀는 느낌",
             feelDesc: "스프링보다 더 과장되게 튀어오르는, 재미있고 생동감 있는 움직임",
@@ -107,8 +93,9 @@ Button("확인") { }
         ),
 
         AnimationItem(
+            kind: .basic,
             id: "fade",
-            name: "Fade (페이드)",
+            name: "Fade",
             situationCategory: "📱 화면 전환",
             feel: "스르르 나타나거나 사라지는 느낌",
             feelDesc: "요소가 서서히 보이거나 사라지는, 가장 자연스럽고 무난한 전환",
@@ -132,8 +119,9 @@ SomeView()
         ),
 
         AnimationItem(
+            kind: .basic,
             id: "slide",
-            name: "Slide (슬라이드)",
+            name: "Slide",
             situationCategory: "📱 화면 전환",
             feel: "밀려 들어오는 느낌",
             feelDesc: "화면이나 패널이 특정 방향에서 밀려 들어오거나 나가는 효과",
@@ -160,8 +148,96 @@ if showSheet {
         ),
 
         AnimationItem(
+            kind: .basic,
+            id: "ease",
+            name: "Ease",
+            situationCategory: "⚙️ 타이밍 참고",
+            feel: "천천히 시작해서 빠르다가 다시 느려지는 느낌",
+            feelDesc: "iOS 기본 전환에 많이 쓰이는 S자 곡선. 가장 무난하고 자연스러운 선택",
+            when: "화면 전환, 요소 이동, 기본 상태 변화",
+            realApps: ["iOS 앱 기본 화면 전환", "설정 메뉴 항목 이동"],
+            properties: [
+                AnimProperty(label: "기본", key: ".easeInOut(duration: 0.3)", desc: "가장 무난하고 자연스러운 선택"),
+                AnimProperty(label: "들어올 때만", key: ".easeIn(duration: 0.25)", desc: "빠르게 나타날 때"),
+                AnimProperty(label: "나갈 때만", key: ".easeOut(duration: 0.25)", desc: "부드럽게 사라질 때"),
+            ],
+            swiftui: """
+// 기본 (가장 많이 쓰임)
+.animation(.easeInOut(duration: 0.3), value: state)
+
+// 빠르게 등장
+.animation(.easeIn(duration: 0.2), value: state)
+
+// 부드럽게 퇴장
+.animation(.easeOut(duration: 0.25), value: state)
+""",
+            prompt: "SwiftUI [뷰]에 easeInOut 애니메이션을 적용해줘. [0.3]초로."
+        ),
+
+        AnimationItem(
+            kind: .basic,
+            id: "linear",
+            name: "Linear",
+            situationCategory: "⚙️ 타이밍 참고",
+            feel: "처음부터 끝까지 일정한 속도로 움직이는 느낌",
+            feelDesc: "기계적으로 일정한 속도. 반복 애니메이션이나 로딩 인디케이터에 적합",
+            when: "회전하는 로딩 스피너, 프로그레스 바, 연속 반복 효과",
+            realApps: ["로딩 스피너 회전", "프로그레스 바 채워짐"],
+            properties: [
+                AnimProperty(label: "기본 사용", key: ".linear(duration: 1.0)", desc: "반복 애니메이션에 가장 자연스러움"),
+                AnimProperty(label: "무한 반복", key: ".repeatForever(autoreverses: false)", desc: "autoreverses: false = 같은 방향 반복"),
+            ],
+            swiftui: """
+@State var isRotating = false
+
+Circle()
+    .trim(from: 0, to: 0.7)
+    .stroke(style: StrokeStyle(lineWidth: 3, lineCap: .round))
+    .rotationEffect(.degrees(isRotating ? 360 : 0))
+    .animation(
+        .linear(duration: 1.0)
+            .repeatForever(autoreverses: false),
+        value: isRotating
+    )
+    .onAppear { isRotating = true }
+""",
+            prompt: "SwiftUI [뷰]를 linear 애니메이션으로 [회전/이동]시켜줘. 무한 반복."
+        ),
+
+        // ─── 조합 ───────────────────────────────────────────
+
+        AnimationItem(
+            kind: .combo,
+            id: "scale",
+            name: "Scale + Spring",
+            situationCategory: "👆 버튼 · 탭 반응",
+            feel: "눌리는 느낌",
+            feelDesc: "버튼을 탭했을 때 살짝 눌리는 물리적인 반응감",
+            when: "버튼, 카드, 아이콘을 탭했을 때",
+            realApps: ["트위터 하트 버튼 탭", "앱 아이콘 누를 때", "결제 버튼 확인"],
+            properties: [
+                AnimProperty(label: "크기", key: ".scaleEffect(0.92)", desc: "1.0이 원래 크기. 탭 반응엔 0.90~0.95가 자연스러워요"),
+                AnimProperty(label: "반응 방식", key: ".spring(response:dampingFraction:)", desc: "spring을 써야 진짜 눌리는 느낌이 남. easeInOut은 어색함"),
+            ],
+            swiftui: """
+@State var isPressed = false
+
+Button("확인") { }
+    .scaleEffect(isPressed ? 0.92 : 1.0)
+    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
+    .simultaneousGesture(
+        DragGesture(minimumDistance: 0)
+            .onChanged { _ in isPressed = true }
+            .onEnded { _ in isPressed = false }
+    )
+""",
+            prompt: "SwiftUI [버튼/카드]를 탭했을 때 살짝 눌리는 scale 피드백 애니메이션을 만들어줘. 자연스럽게."
+        ),
+
+        AnimationItem(
+            kind: .combo,
             id: "shake",
-            name: "Shake (흔들기)",
+            name: "KeyframeAnimator + Offset",
             situationCategory: "🔔 알림 · 피드백",
             feel: "틀렸을 때 고개 젓는 느낌",
             feelDesc: "입력이 잘못됐을 때 뷰가 좌우로 빠르게 떨리는 부정 피드백",
@@ -194,8 +270,9 @@ TextField("비밀번호", text: $password)
         ),
 
         AnimationItem(
+            kind: .combo,
             id: "pulse",
-            name: "Pulse (펄스)",
+            name: "Scale + Opacity (반복)",
             situationCategory: "⏳ 로딩 · 대기",
             feel: "숨쉬듯 커졌다 작아지는 느낌",
             feelDesc: "살아있는 것처럼 천천히 맥박치는 효과",
@@ -223,8 +300,9 @@ Circle()
         ),
 
         AnimationItem(
+            kind: .combo,
             id: "stagger",
-            name: "Stagger (순차 등장)",
+            name: "Spring + Delay (순차)",
             situationCategory: "📋 리스트 · 등장",
             feel: "아이템이 하나씩 차례로 나타나는 느낌",
             feelDesc: "리스트나 그리드가 도미노처럼 순서대로 나타나는 효과",
@@ -250,8 +328,9 @@ ForEach(Array(items.enumerated()), id: \\.offset) { index, item in
         ),
 
         AnimationItem(
+            kind: .combo,
             id: "wave",
-            name: "Wave (웨이브)",
+            name: "EaseInOut + Delay (반복)",
             situationCategory: "🔄 반복 효과",
             feel: "파도처럼 물결치는 느낌",
             feelDesc: "여러 요소가 파도처럼 순서대로 위아래로 움직이는 리드미컬한 반복",
@@ -282,8 +361,9 @@ HStack(spacing: 4) {
         ),
 
         AnimationItem(
+            kind: .combo,
             id: "pop-in",
-            name: "Pop In (팝인)",
+            name: "Scale + Opacity Transition",
             situationCategory: "👆 버튼 · 탭 반응",
             feel: "뿅 하고 나타나는 느낌",
             feelDesc: "작은 점에서 갑자기 크게 튀어나오는 재미있는 등장",
@@ -307,8 +387,9 @@ if showBadge {
         ),
 
         AnimationItem(
+            kind: .combo,
             id: "rubber-band",
-            name: "Rubber Band (고무줄)",
+            name: "DragGesture + Spring 복귀",
             situationCategory: "✋ 제스처",
             feel: "당기면 늘어나다가 손 떼면 돌아오는 느낌",
             feelDesc: "스크롤이 끝에 달했을 때 고무줄처럼 저항감 있게 늘어나는 효과",
