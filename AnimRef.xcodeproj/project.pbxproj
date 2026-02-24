@@ -7,20 +7,20 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-1456EA69DD75412885DF27FE /* AnimRefApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45294449F98C445EA7EDA09E /* AnimRefApp.swift */; };
+		088742B589EF428EBA39AE03 /* AnimationCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F48F86CF564CC4B097B047 /* AnimationCardView.swift */; };
+		1456EA69DD75412885DF27FE /* AnimRefApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45294449F98C445EA7EDA09E /* AnimRefApp.swift */; };
+		844EF2E07AB34FF594F5AE31 /* AnimationDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98A387F3AD774F3481B50B97 /* AnimationDemoView.swift */; };
 		A27AD94EA866489EB8BF570A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21A952BDF647407CB471585C /* ContentView.swift */; };
 		C96B11703FAF4B4BB353E0D6 /* AnimationItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA86B80CD32349B4978F42E2 /* AnimationItem.swift */; };
-		844EF2E07AB34FF594F5AE31 /* AnimationDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98A387F3AD774F3481B50B97 /* AnimationDemoView.swift */; };
 		CCDD1122334455667788CCDD /* HeroDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB1122334455667788AABB /* HeroDetailView.swift */; };
-		088742B589EF428EBA39AE03 /* AnimationCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F48F86CF564CC4B097B047 /* AnimationCardView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		9459C1DEFD6F41E088A8EBC7 /* AnimRef.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AnimRef.app; sourceTree = BUILT_PRODUCTS_DIR; };
-45294449F98C445EA7EDA09E /* AnimRefApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AnimRefApp.swift; path = Sources/AnimRef/AnimRefApp.swift; sourceTree = SOURCE_ROOT; };
 		21A952BDF647407CB471585C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ContentView.swift; path = Sources/AnimRef/ContentView.swift; sourceTree = SOURCE_ROOT; };
-		AA86B80CD32349B4978F42E2 /* AnimationItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AnimationItem.swift; path = Sources/AnimRef/Models/AnimationItem.swift; sourceTree = SOURCE_ROOT; };
+		45294449F98C445EA7EDA09E /* AnimRefApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AnimRefApp.swift; path = Sources/AnimRef/AnimRefApp.swift; sourceTree = SOURCE_ROOT; };
+		9459C1DEFD6F41E088A8EBC7 /* AnimRef.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AnimRef.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		98A387F3AD774F3481B50B97 /* AnimationDemoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AnimationDemoView.swift; path = Sources/AnimRef/Views/AnimationDemoView.swift; sourceTree = SOURCE_ROOT; };
+		AA86B80CD32349B4978F42E2 /* AnimationItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AnimationItem.swift; path = Sources/AnimRef/Models/AnimationItem.swift; sourceTree = SOURCE_ROOT; };
 		AABB1122334455667788AABB /* HeroDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HeroDetailView.swift; path = Sources/AnimRef/Views/HeroDetailView.swift; sourceTree = SOURCE_ROOT; };
 		F0F48F86CF564CC4B097B047 /* AnimationCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AnimationCardView.swift; path = Sources/AnimRef/Views/AnimationCardView.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
@@ -44,12 +44,30 @@
 			);
 			sourceTree = "<group>";
 		};
+		37B5620FBC854685B5498AF5 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AA86B80CD32349B4978F42E2 /* AnimationItem.swift */,
+			);
+			name = Models;
+			sourceTree = "<group>";
+		};
 		44F3D23CF1F14D2290EB3C7A /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				9459C1DEFD6F41E088A8EBC7 /* AnimRef.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		5F114F6960B34133BCB10CFA /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				98A387F3AD774F3481B50B97 /* AnimationDemoView.swift */,
+				AABB1122334455667788AABB /* HeroDetailView.swift */,
+				F0F48F86CF564CC4B097B047 /* AnimationCardView.swift */,
+			);
+			name = Views;
 			sourceTree = "<group>";
 		};
 		67ED714831014DAF86889E7C /* AnimRef */ = {
@@ -61,24 +79,6 @@
 				5F114F6960B34133BCB10CFA /* Views */,
 			);
 			name = AnimRef;
-			sourceTree = "<group>";
-		};
-		37B5620FBC854685B5498AF5 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				AA86B80CD32349B4978F42E2 /* AnimationItem.swift */,
-			);
-			name = Models;
-			sourceTree = "<group>";
-		};
-		5F114F6960B34133BCB10CFA /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				98A387F3AD774F3481B50B97 /* AnimationDemoView.swift */,
-				AABB1122334455667788AABB /* HeroDetailView.swift */,
-				F0F48F86CF564CC4B097B047 /* AnimationCardView.swift */,
-			);
-			name = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -156,6 +156,36 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		848AF91B9DE04B5E855839E6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSTECATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8LN2TLGS5G;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kaya.animref;
+				PRODUCT_NAME = AnimRef;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D1EE61F2846443E4B88C6E6E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		D5126EB0745146B6A67F0686 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -177,22 +207,12 @@
 			};
 			name = Debug;
 		};
-		D1EE61F2846443E4B88C6E6E /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				SDKROOT = iphoneos;
-				SWIFT_VERSION = 5.0;
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
 		D69F4D1BE1D34739A8374727 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSTECATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8LN2TLGS5G;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -209,41 +229,23 @@
 			};
 			name = Debug;
 		};
-		848AF91B9DE04B5E855839E6 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSTECATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.kaya.animref;
-				PRODUCT_NAME = AnimRef;
-				SDKROOT = iphoneos;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		7F59766D6CB14135BA883923 /* Build configuration list for PBXProject "AnimRef" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				D5126EB0745146B6A67F0686 /* Debug */,
-				D1EE61F2846443E4B88C6E6E /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		0AC25353755A4E7396EDAC28 /* Build configuration list for PBXNativeTarget "AnimRef" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				D69F4D1BE1D34739A8374727 /* Debug */,
 				848AF91B9DE04B5E855839E6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7F59766D6CB14135BA883923 /* Build configuration list for PBXProject "AnimRef" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D5126EB0745146B6A67F0686 /* Debug */,
+				D1EE61F2846443E4B88C6E6E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

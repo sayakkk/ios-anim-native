@@ -7,7 +7,7 @@ struct AnimationDemoView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.05, green: 0.04, blue: 0.02)
+            Color(red: 0.97, green: 0.97, blue: 0.96)  // off-white thumbnail bg
             switch id {
             case "scale":         ScaleDemo()
             case "spring":        SpringDemo()
@@ -25,35 +25,51 @@ struct AnimationDemoView: View {
             default:              DefaultDemo()
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 0))
     }
 }
 
-// MARK: - Accent color helper
-private let accent = Color(red: 0.94, green: 0.66, blue: 0.26)
-private func dot(_ size: CGFloat = 38, radius: CGFloat = 19) -> some View {
+// MARK: - Shared style
+
+private let ink = Color(red: 0.13, green: 0.12, blue: 0.11)
+private let inkLight = Color(red: 0.13, green: 0.12, blue: 0.11).opacity(0.18)
+private let strokeW: CGFloat = 2.0
+
+private func circle(_ size: CGFloat = 36) -> some View {
     Circle()
-        .fill(
-            LinearGradient(colors: [accent, Color(red: 0.88, green: 0.36, blue: 0.16)],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-        )
+        .stroke(ink, lineWidth: strokeW)
         .frame(width: size, height: size)
-        .shadow(color: accent.opacity(0.5), radius: 8, y: 4)
+}
+
+private func rect(_ w: CGFloat = 52, _ h: CGFloat = 36, r: CGFloat = 8) -> some View {
+    RoundedRectangle(cornerRadius: r)
+        .stroke(ink, lineWidth: strokeW)
+        .frame(width: w, height: h)
 }
 
 // MARK: - Scale
 struct ScaleDemo: View {
     @State private var pressed = false
     var body: some View {
-        dot()
-            .scaleEffect(pressed ? 0.88 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.55), value: pressed)
-            .onAppear {
-                Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in
-                    pressed = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { pressed = false }
-                }
+        ZStack {
+            Circle()
+                .stroke(ink, lineWidth: strokeW)
+                .frame(width: 46, height: 46)
+                .scaleEffect(pressed ? 0.82 : 1.0)
+                .animation(.spring(response: 0.28, dampingFraction: 0.52), value: pressed)
+            if pressed {
+                // inner fill hint
+                Circle()
+                    .fill(inkLight)
+                    .frame(width: 42, height: 42)
+                    .transition(.opacity)
             }
+        }
+        .onAppear {
+            Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in
+                pressed = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { pressed = false }
+            }
+        }
     }
 }
 
@@ -61,9 +77,9 @@ struct ScaleDemo: View {
 struct SpringDemo: View {
     @State private var up = false
     var body: some View {
-        dot()
-            .offset(y: up ? -28 : 28)
-            .animation(.spring(response: 0.45, dampingFraction: 0.55), value: up)
+        circle()
+            .offset(y: up ? -26 : 26)
+            .animation(.spring(response: 0.42, dampingFraction: 0.52), value: up)
             .onAppear {
                 Timer.scheduledTimer(withTimeInterval: 1.8, repeats: true) { _ in up.toggle() }
             }
@@ -74,9 +90,9 @@ struct SpringDemo: View {
 struct BouncyDemo: View {
     @State private var big = false
     var body: some View {
-        dot()
-            .scaleEffect(big ? 1.5 : 0.5)
-            .animation(.bouncy(duration: 0.5, extraBounce: 0.3), value: big)
+        circle()
+            .scaleEffect(big ? 1.55 : 0.45)
+            .animation(.bouncy(duration: 0.5, extraBounce: 0.28), value: big)
             .onAppear {
                 Timer.scheduledTimer(withTimeInterval: 1.8, repeats: true) { _ in big.toggle() }
             }
@@ -87,11 +103,11 @@ struct BouncyDemo: View {
 struct FadeDemo: View {
     @State private var visible = false
     var body: some View {
-        dot()
+        circle()
             .opacity(visible ? 1 : 0.05)
-            .animation(.easeInOut(duration: 0.8), value: visible)
+            .animation(.easeInOut(duration: 0.9), value: visible)
             .onAppear {
-                Timer.scheduledTimer(withTimeInterval: 1.4, repeats: true) { _ in visible.toggle() }
+                Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in visible.toggle() }
             }
     }
 }
@@ -101,12 +117,18 @@ struct SlideDemo: View {
     @State private var shown = false
     var body: some View {
         ZStack {
+            // Track line
+            Rectangle()
+                .fill(inkLight)
+                .frame(width: strokeW, height: 40)
+                .offset(y: 10)
+
             if shown {
-                dot()
+                circle()
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .animation(.spring(response: 0.4, dampingFraction: 0.72), value: shown)
+        .animation(.spring(response: 0.38, dampingFraction: 0.70), value: shown)
         .onAppear {
             Timer.scheduledTimer(withTimeInterval: 1.8, repeats: true) { _ in shown.toggle() }
         }
@@ -115,32 +137,25 @@ struct SlideDemo: View {
 
 // MARK: - Shake
 struct ShakeDemo: View {
-    @State private var errorTrigger = false
+    @State private var trigger = false
     var body: some View {
-        RoundedRectangle(cornerRadius: 10)
-            .fill(Color(red: 0.12, green: 0.10, blue: 0.06))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(errorTrigger ? Color.red.opacity(0.7) : Color.white.opacity(0.08), lineWidth: 1.5)
-            )
-            .frame(width: 80, height: 32)
-            .overlay(Text("••••••").font(.system(size: 16)).foregroundStyle(.white.opacity(0.5)))
-            .keyframeAnimator(initialValue: 0.0, trigger: errorTrigger) { v, x in
+        rect(72, 36)
+            .keyframeAnimator(initialValue: 0.0, trigger: trigger) { v, x in
                 v.offset(x: x)
             } keyframes: { _ in
                 KeyframeTrack {
                     LinearKeyframe(0,    duration: 0.04)
-                    LinearKeyframe(-12,  duration: 0.08)
-                    LinearKeyframe(12,   duration: 0.08)
-                    LinearKeyframe(-8,   duration: 0.07)
-                    LinearKeyframe(8,    duration: 0.07)
-                    LinearKeyframe(-4,   duration: 0.06)
+                    LinearKeyframe(-11,  duration: 0.07)
+                    LinearKeyframe(11,   duration: 0.07)
+                    LinearKeyframe(-7,   duration: 0.06)
+                    LinearKeyframe(7,    duration: 0.06)
+                    LinearKeyframe(-3,   duration: 0.05)
                     LinearKeyframe(0,    duration: 0.05)
                 }
             }
             .onAppear {
                 Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
-                    errorTrigger.toggle()
+                    trigger.toggle()
                 }
             }
     }
@@ -152,13 +167,13 @@ struct PulseDemo: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(accent.opacity(0.2))
-                .frame(width: 56, height: 56)
-                .scaleEffect(pulsing ? 1.4 : 0.9)
-                .opacity(pulsing ? 0.15 : 0.4)
-            dot(32)
+                .stroke(ink.opacity(pulsing ? 0.08 : 0.25), lineWidth: strokeW)
+                .frame(width: 60, height: 60)
+                .scaleEffect(pulsing ? 1.45 : 0.85)
+
+            circle(34)
                 .scaleEffect(pulsing ? 1.12 : 0.92)
-                .opacity(pulsing ? 1.0 : 0.6)
+                .opacity(pulsing ? 0.6 : 1.0)
         }
         .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: pulsing)
         .onAppear { pulsing = true }
@@ -168,15 +183,14 @@ struct PulseDemo: View {
 // MARK: - Stagger
 struct StaggerDemo: View {
     @State private var appeared = false
-
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             ForEach(0..<4, id: \.self) { i in
-                dot(22, radius: 11)
+                circle(22)
                     .opacity(appeared ? 1 : 0)
-                    .offset(y: appeared ? 0 : 18)
+                    .offset(y: appeared ? 0 : 16)
                     .animation(
-                        .spring(response: 0.4, dampingFraction: 0.7)
+                        .spring(response: 0.38, dampingFraction: 0.70)
                             .delay(Double(i) * 0.08),
                         value: appeared
                     )
@@ -185,13 +199,9 @@ struct StaggerDemo: View {
         .onAppear {
             Timer.scheduledTimer(withTimeInterval: 2.4, repeats: true) { _ in
                 appeared = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    appeared = true
-                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { appeared = true }
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                appeared = true
-            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { appeared = true }
         }
     }
 }
@@ -200,21 +210,17 @@ struct StaggerDemo: View {
 struct WaveDemo: View {
     @State private var animating = false
     var body: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 6) {
             ForEach(0..<5, id: \.self) { i in
-                Capsule()
-                    .fill(
-                        LinearGradient(colors: [accent, Color(red: 0.88, green: 0.36, blue: 0.16)],
-                                       startPoint: .top, endPoint: .bottom)
-                    )
-                    .frame(width: 5, height: animating ? 32 : 7)
+                RoundedRectangle(cornerRadius: 2)
+                    .stroke(ink, lineWidth: strokeW)
+                    .frame(width: 6, height: animating ? 34 : 8)
                     .animation(
-                        .easeInOut(duration: 0.45)
+                        .easeInOut(duration: 0.44)
                             .repeatForever(autoreverses: true)
-                            .delay(Double(i) * 0.1),
+                            .delay(Double(i) * 0.09),
                         value: animating
                     )
-                    .shadow(color: accent.opacity(0.4), radius: 3)
             }
         }
         .onAppear { animating = true }
@@ -227,21 +233,19 @@ struct PopInDemo: View {
     var body: some View {
         ZStack {
             if show {
-                dot()
+                circle()
                     .transition(
                         .scale(scale: 0.05).combined(with: .opacity)
                     )
             }
         }
-        .animation(.spring(bounce: 0.55), value: show)
+        .animation(.spring(bounce: 0.52), value: show)
         .onAppear {
             Timer.scheduledTimer(withTimeInterval: 1.8, repeats: true) { _ in
                 show = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    show = true
-                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { show = true }
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { show = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { show = true }
         }
     }
 }
@@ -249,24 +253,23 @@ struct PopInDemo: View {
 // MARK: - Rubber Band
 struct RubberBandDemo: View {
     @State private var offset: CGFloat = 0
-    @State private var stretching = false
-
     var body: some View {
-        dot()
-            .offset(y: offset)
-            .onAppear {
-                Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
-                    // Simulate drag then release
-                    withAnimation(.linear(duration: 0.5)) {
-                        offset = 35 // drag down (rubber band effect simulated)
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.55)) {
-                            offset = 0
-                        }
-                    }
+        VStack(spacing: 0) {
+            // Dotted track
+            Rectangle()
+                .fill(inkLight)
+                .frame(width: strokeW, height: 30)
+            circle()
+                .offset(y: offset)
+        }
+        .onAppear {
+            Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+                withAnimation(.linear(duration: 0.5)) { offset = 32 }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                    withAnimation(.spring(response: 0.38, dampingFraction: 0.52)) { offset = 0 }
                 }
             }
+        }
     }
 }
 
@@ -274,12 +277,18 @@ struct RubberBandDemo: View {
 struct EaseDemo: View {
     @State private var moved = false
     var body: some View {
-        dot()
-            .offset(x: moved ? 36 : -36)
-            .animation(.easeInOut(duration: 0.8), value: moved)
-            .onAppear {
-                Timer.scheduledTimer(withTimeInterval: 1.4, repeats: true) { _ in moved.toggle() }
-            }
+        ZStack {
+            // Track
+            Rectangle()
+                .fill(inkLight)
+                .frame(width: 72, height: strokeW)
+            circle()
+                .offset(x: moved ? 28 : -28)
+                .animation(.easeInOut(duration: 0.82), value: moved)
+        }
+        .onAppear {
+            Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in moved.toggle() }
+        }
     }
 }
 
@@ -287,27 +296,23 @@ struct EaseDemo: View {
 struct LinearDemo: View {
     @State private var rotating = false
     var body: some View {
-        ZStack {
-            Circle()
-                .trim(from: 0, to: 0.72)
-                .stroke(
-                    LinearGradient(colors: [accent, Color(red: 0.88, green: 0.36, blue: 0.16)],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing),
-                    style: StrokeStyle(lineWidth: 4, lineCap: .round)
-                )
-                .frame(width: 38, height: 38)
-                .rotationEffect(.degrees(rotating ? 360 : 0))
-                .animation(
-                    .linear(duration: 1.1).repeatForever(autoreverses: false),
-                    value: rotating
-                )
-                .shadow(color: accent.opacity(0.5), radius: 6)
-        }
-        .onAppear { rotating = true }
+        Circle()
+            .trim(from: 0, to: 0.72)
+            .stroke(
+                ink,
+                style: StrokeStyle(lineWidth: strokeW, lineCap: .round)
+            )
+            .frame(width: 38, height: 38)
+            .rotationEffect(.degrees(rotating ? 360 : 0))
+            .animation(
+                .linear(duration: 1.1).repeatForever(autoreverses: false),
+                value: rotating
+            )
+            .onAppear { rotating = true }
     }
 }
 
 // MARK: - Default
 struct DefaultDemo: View {
-    var body: some View { dot() }
+    var body: some View { circle() }
 }
