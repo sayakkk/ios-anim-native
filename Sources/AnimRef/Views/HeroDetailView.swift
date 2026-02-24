@@ -88,7 +88,7 @@ private struct DetailPage: View {
     @State private var copiedPrompt  = false
     @State private var copiedCode    = false
     @State private var showCode      = false
-    @State private var showSpringTip = false
+    @State private var selectedExample: RealAppExample? = nil
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -155,10 +155,17 @@ private struct DetailPage: View {
                         VStack(alignment: .leading, spacing: 12) {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(alignment: .top, spacing: 10) {
-                                    ForEach(item.realApps, id: \.self) { app in
-                                        AppExampleTile(text: app, isSelected: showSpringTip) {
+                                    ForEach(item.realApps, id: \.name) { example in
+                                        AppExampleTile(
+                                            text: example.name,
+                                            isSelected: selectedExample?.name == example.name
+                                        ) {
                                             withAnimation(.spring(response: 0.30, dampingFraction: 0.78)) {
-                                                showSpringTip.toggle()
+                                                if selectedExample?.name == example.name {
+                                                    selectedExample = nil
+                                                } else {
+                                                    selectedExample = example
+                                                }
                                             }
                                         }
                                     }
@@ -166,17 +173,35 @@ private struct DetailPage: View {
                                 .padding(.vertical, 2)
                             }
 
-                            if showSpringTip && !item.properties.isEmpty {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text("이 장면에서 쓰이는 값")
+                            if let ex = selectedExample {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text("[\(ex.name)] 실제로 쓰이는 값")
                                         .font(.system(size: 10, weight: .bold))
                                         .foregroundStyle(Color.textTertiary)
                                         .textCase(.uppercase)
                                         .kerning(0.8)
-                                    VStack(spacing: 6) {
-                                        ForEach(item.properties, id: \.key) { prop in
-                                            PropRow(prop: prop)
-                                        }
+
+                                    // Code block
+                                    HStack(alignment: .top, spacing: 10) {
+                                        Text(ex.code)
+                                            .font(.system(size: 12, design: .monospaced))
+                                            .foregroundStyle(Color.textSecondary)
+                                            .padding(12)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .background(Color.white)
+                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.cardBorder, lineWidth: 1))
+                                    }
+
+                                    // Context note
+                                    HStack(alignment: .top, spacing: 6) {
+                                        Image(systemName: "info.circle")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(Color.textTertiary)
+                                        Text(ex.note)
+                                            .font(.system(size: 12))
+                                            .foregroundStyle(Color.textSecondary)
+                                            .lineSpacing(3)
                                     }
                                 }
                                 .transition(.move(edge: .top).combined(with: .opacity))
