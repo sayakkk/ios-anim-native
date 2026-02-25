@@ -650,15 +650,28 @@ private struct LiveEaseDemo: View {
     }
 
     var body: some View {
-        ZStack {
-            Rectangle().fill(liveInkLight).frame(width: 72, height: liveSW)
-            liveCircle()
-                .offset(x: moved ? 28 : -28)
-                .animation(animation, value: moved)
+        GeometryReader { geo in
+            let travel = geo.size.width * 0.38
+            ZStack {
+                // 트랙
+                Capsule()
+                    .fill(liveInkLight)
+                    .frame(width: travel * 2 + 40, height: liveSW)
+                // 엔드 마커
+                Circle().fill(liveInkLight).frame(width: 6, height: 6)
+                    .offset(x: -travel - 2)
+                Circle().fill(liveInkLight).frame(width: 6, height: 6)
+                    .offset(x:  travel + 2)
+                // 움직이는 원
+                liveCircle(42)
+                    .offset(x: moved ? travel : -travel)
+                    .animation(animation, value: moved)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { moved.toggle() }
-            Timer.scheduledTimer(withTimeInterval: duration + 0.4, repeats: true) { _ in moved.toggle() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { moved.toggle() }
+            Timer.scheduledTimer(withTimeInterval: duration + 0.55, repeats: true) { _ in moved.toggle() }
         }
     }
 }
@@ -879,23 +892,48 @@ private struct LiveSlideDemo: View {
         let base: AnyTransition = .move(edge: edge)
         return withOpacity ? base.combined(with: .opacity) : base
     }
+    // 방향에 따라 패널 크기 결정
+    private var isVertical: Bool { Int(slideEdge) == 0 || Int(slideEdge) == 1 }
 
     var body: some View {
-        ZStack(alignment: edgeAlignment) {
-            RoundedRectangle(cornerRadius: 4)
-                .stroke(liveInkLight, lineWidth: 1)
-                .frame(width: 44, height: 60)
-            if shown {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(liveInk.opacity(0.18))
-                    .frame(width: 44, height: 30)
-                    .transition(slideTransition)
+        GeometryReader { geo in
+            let w = geo.size.width * 0.62
+            let h = geo.size.height * 0.72
+            ZStack(alignment: edgeAlignment) {
+                // 배경 화면 틀
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(liveInkLight, lineWidth: 1.5)
+                    .frame(width: w, height: h)
+                // 배경 콘텐츠 라인
+                VStack(spacing: 8) {
+                    ForEach(0..<4, id: \.self) { i in
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(liveInkLight)
+                            .frame(width: w * 0.55 - CGFloat(i) * 10, height: 5)
+                    }
+                }
+                // 슬라이드 패널
+                if shown {
+                    RoundedRectangle(cornerRadius: isVertical ? 10 : 0)
+                        .fill(liveInk.opacity(0.13))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: isVertical ? 10 : 0)
+                                .stroke(liveInk.opacity(0.22), lineWidth: 1)
+                        )
+                        .frame(
+                            width:  isVertical ? w - 2    : w * 0.52,
+                            height: isVertical ? h * 0.46 : h - 2
+                        )
+                        .transition(slideTransition)
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.78), value: shown)
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { shown = true }
-            Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in shown.toggle() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { shown = true }
+            Timer.scheduledTimer(withTimeInterval: 1.8, repeats: true) { _ in shown.toggle() }
         }
     }
 }
