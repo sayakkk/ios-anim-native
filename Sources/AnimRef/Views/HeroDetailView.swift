@@ -645,7 +645,8 @@ private struct LiveEaseDemo: View {
         switch Int(easeKind) {
         case 0: return .easeIn(duration: duration)
         case 2: return .easeOut(duration: duration)
-        default: return .easeInOut(duration: duration)
+        case 3: return .easeInOut(duration: duration)
+        default: return .timingCurve(0.25, 0.1, 0.25, 1.0, duration: duration) // CSS ease
         }
     }
 

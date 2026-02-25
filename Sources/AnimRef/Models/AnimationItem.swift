@@ -304,12 +304,13 @@ if showSheet {
                     paramKey: "duration", minValue: 0.1, maxValue: 2.0, defaultValue: 0.3, step: 0.05, format: "%.1f"
                 ),
                 AnimProperty(
-                    label: "커브", key: ".easeIn / .easeInOut / .easeOut",
-                    desc: "easeIn=빠르게 시작, easeInOut=S자 곡선, easeOut=천천히 끝",
+                    label: "커브", key: ".easeIn / .ease / .easeOut / .easeInOut",
+                    desc: "easeIn=느리게 시작·빠르게 끝 / ease=살짝 완만 / easeOut=빠르게 시작·느리게 끝 / easeInOut=양쪽 모두 S자",
                     kind: .picker(key: "easeKind", options: [
                         (label: ".easeIn",    value: 0),
-                        (label: ".easeInOut", value: 1),
+                        (label: ".ease",      value: 1),
                         (label: ".easeOut",   value: 2),
+                        (label: ".easeInOut", value: 3),
                     ], defaultIndex: 1)
                 ),
             ],
