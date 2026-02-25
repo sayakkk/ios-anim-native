@@ -128,7 +128,7 @@ struct AnimationData {
     value: state
 )
 """,
-            prompt: "SwiftUI [뷰]의 변화에 spring 애니메이션을 적용해줘. response [0.4], dampingFraction [0.7]로."
+            prompt: "SwiftUI [적용할 대상]의 변화에 spring 애니메이션을 적용해줘. response [0.4], dampingFraction [0.7]로."
         ),
 
         AnimationItem(
@@ -172,7 +172,7 @@ struct AnimationData {
     value: isExpanded
 )
 """,
-            prompt: "SwiftUI [뷰]에 .bouncy 애니메이션을 적용해서 고무공처럼 통통 튀는 느낌을 줘. extraBounce [0.25]로."
+            prompt: "SwiftUI [적용할 대상]에 .bouncy 애니메이션을 적용해서 고무공처럼 통통 튀는 느낌을 줘. extraBounce [0.25]로."
         ),
 
         AnimationItem(
@@ -220,7 +220,7 @@ SomeView()
     .opacity(isVisible ? 1 : 0)
     .animation(.easeInOut(duration: 0.3), value: isVisible)
 """,
-            prompt: "SwiftUI [뷰]가 {fadeDirection} fade 애니메이션을 적용해줘. [0.3]초, easeInOut 커브로."
+            prompt: "SwiftUI [적용할 대상]가 {fadeDirection} fade 애니메이션을 적용해줘. [0.3]초, easeInOut 커브로."
         ),
 
         AnimationItem(
@@ -278,7 +278,7 @@ if showSheet {
         )
 }
 """,
-            prompt: "SwiftUI [바텀시트/패널/뷰]가 {slideEdge}에서 slide로 나타나게 해줘. opacity 조합: {withOpacity}."
+            prompt: "SwiftUI [적용할 대상]가 {slideEdge}에서 slide로 나타나게 해줘. opacity 조합: {withOpacity}."
         ),
 
         AnimationItem(
@@ -323,7 +323,7 @@ if showSheet {
 .animation(.easeIn(duration: 0.2), value: state)
 .animation(.easeOut(duration: 0.25), value: state)
 """,
-            prompt: "SwiftUI [뷰]에 {easeKind} 애니메이션을 적용해줘. [0.3]초로."
+            prompt: "SwiftUI [적용할 대상]에 {easeKind} 애니메이션을 적용해줘. [0.3]초로."
         ),
 
         AnimationItem(
@@ -372,7 +372,7 @@ Circle()
     )
     .onAppear { isRotating = true }
 """,
-            prompt: "SwiftUI [뷰]를 linear 애니메이션으로 무한 회전시켜줘. autoreverses: {autoreverses}, duration [1.0]초."
+            prompt: "SwiftUI [적용할 대상]를 linear 애니메이션으로 무한 회전시켜줘. autoreverses: {autoreverses}, duration [1.0]초."
         ),
 
         // ─── 조합 ────────────────────────────────────────────
@@ -431,7 +431,7 @@ Button("확인") { }
             .onEnded { _ in isPressed = false }
     )
 """,
-            prompt: "SwiftUI [버튼/카드]를 탭했을 때 살짝 눌리는 scale 피드백을 만들어줘. scaleEffect [0.92], response [0.3], dampingFraction [0.6]."
+            prompt: "SwiftUI [적용할 대상]를 탭했을 때 살짝 눌리는 scale 피드백을 만들어줘. scaleEffect [0.92], response [0.3], dampingFraction [0.6]."
         ),
 
         AnimationItem(
@@ -484,7 +484,7 @@ TextField("비밀번호", text: $password)
         }
     }
 """,
-            prompt: "SwiftUI [입력창/뷰]에서 오류 시 좌우로 흔들리는 shake 애니메이션을 만들어줘. amplitude [12]pt, duration [0.08]s."
+            prompt: "SwiftUI [적용할 대상]에서 오류 시 좌우로 흔들리는 shake 애니메이션을 만들어줘. amplitude [12]pt, duration [0.08]s."
         ),
 
         AnimationItem(
@@ -532,7 +532,7 @@ Circle()
     )
     .onAppear { isPulsing = true }
 """,
-            prompt: "SwiftUI [원/뷰]가 숨쉬듯 천천히 커지고 작아지는 pulse 애니메이션을 만들어줘. scaleMax [1.15], duration [1.2]초."
+            prompt: "SwiftUI [적용할 대상]가 숨쉬듯 천천히 커지고 작아지는 pulse 애니메이션을 만들어줘. scaleMax [1.15], duration [1.2]초."
         ),
 
         AnimationItem(
@@ -676,7 +676,7 @@ if showBadge {
         .animation(.spring(bounce: 0.5), value: showBadge)
 }
 """,
-            prompt: "SwiftUI [뱃지/아이콘]이 나타날 때 뿅 하고 통통 튀며 등장하는 pop in 애니메이션을 만들어줘. startScale [0.1], bounce [0.5]."
+            prompt: "SwiftUI [적용할 대상]이 나타날 때 뿅 하고 통통 튀며 등장하는 pop in 애니메이션을 만들어줘. startScale [0.1], bounce [0.5]."
         ),
 
         AnimationItem(
@@ -728,7 +728,7 @@ SomeView()
             }
     )
 """,
-            prompt: "SwiftUI 뷰를 드래그하면 고무줄처럼 저항감 있게 늘어나다가 손 떼면 spring으로 복귀하게 해줘. resistanceFactor [3.0], dampingFraction [0.6]."
+            prompt: "SwiftUI [적용할 대상]를 드래그하면 고무줄처럼 저항감 있게 늘어나다가 손 떼면 spring으로 복귀하게 해줘. resistanceFactor [3.0], dampingFraction [0.6]."
         ),
     ]
 }
