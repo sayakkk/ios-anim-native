@@ -641,37 +641,53 @@ private struct LiveEaseDemo: View {
     var easeKind: Double = 1.0  // 0=easeIn, 1=easeInOut, 2=easeOut
     @State private var moved = false
 
-    private var animation: Animation {
-        switch Int(easeKind) {
-        case 0: return .easeIn(duration: duration)
-        case 2: return .easeOut(duration: duration)
-        default: return .easeInOut(duration: duration)
-        }
-    }
+    private let curves: [(label: String, anim: (Double) -> Animation)] = [
+        (".easeIn",    { d in .easeIn(duration: d) }),
+        (".easeInOut", { d in .easeInOut(duration: d) }),
+        (".easeOut",   { d in .easeOut(duration: d) }),
+    ]
 
     var body: some View {
         GeometryReader { geo in
-            let travel = geo.size.width * 0.38
-            ZStack {
-                // 트랙
-                Capsule()
-                    .fill(liveInkLight)
-                    .frame(width: travel * 2 + 40, height: liveSW)
-                // 엔드 마커
-                Circle().fill(liveInkLight).frame(width: 6, height: 6)
-                    .offset(x: -travel - 2)
-                Circle().fill(liveInkLight).frame(width: 6, height: 6)
-                    .offset(x:  travel + 2)
-                // 움직이는 원
-                liveCircle(42)
-                    .offset(x: moved ? travel : -travel)
-                    .animation(animation, value: moved)
+            let travel = geo.size.width * 0.36
+            let rowH   = geo.size.height / 3.2
+
+            VStack(spacing: 0) {
+                ForEach(Array(curves.enumerated()), id: \.offset) { i, curve in
+                    let isActive = Int(easeKind) == i
+                    ZStack {
+                        // 트랙
+                        Capsule()
+                            .fill(isActive ? liveInk.opacity(0.22) : liveInkLight)
+                            .frame(width: travel * 2 + 32, height: liveSW)
+                        // 엔드 마커
+                        Circle()
+                            .fill(isActive ? liveInk.opacity(0.35) : liveInkLight)
+                            .frame(width: 5, height: 5)
+                            .offset(x: -travel - 1)
+                        Circle()
+                            .fill(isActive ? liveInk.opacity(0.35) : liveInkLight)
+                            .frame(width: 5, height: 5)
+                            .offset(x:  travel + 1)
+                        // 움직이는 원
+                        liveCircle(isActive ? 34 : 24)
+                            .opacity(isActive ? 1.0 : 0.38)
+                            .offset(x: moved ? travel : -travel)
+                            .animation(curve.anim(duration), value: moved)
+                        // 레이블
+                        Text(curve.label)
+                            .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(isActive ? Color.textSecondary : Color.textTertiary.opacity(0.55))
+                            .offset(x: -travel - 34)
+                    }
+                    .frame(width: geo.size.width, height: rowH)
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { moved.toggle() }
-            Timer.scheduledTimer(withTimeInterval: duration + 0.55, repeats: true) { _ in moved.toggle() }
+            Timer.scheduledTimer(withTimeInterval: duration + 0.6, repeats: true) { _ in moved.toggle() }
         }
     }
 }
