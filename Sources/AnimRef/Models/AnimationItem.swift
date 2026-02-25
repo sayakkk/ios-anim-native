@@ -10,12 +10,23 @@ struct AnimProperty {
     let label: String
     let key: String
     let desc: String
+    // Slider support (nil = info-only, not adjustable)
+    var paramKey: String? = nil
+    var minValue: Double? = nil
+    var maxValue: Double? = nil
+    var defaultValue: Double? = nil
+    var step: Double? = nil
+    var format: String = "%.2f"
+
+    var isSlider: Bool {
+        paramKey != nil && minValue != nil && maxValue != nil && defaultValue != nil
+    }
 }
 
 struct RealAppExample {
-    let name: String       // "iOS 화면전환"
-    let code: String       // ".spring(response: 0.45, dampingFraction: 0.94)"
-    let note: String       // "NavigationStack push/pop. 거의 안 튀고 부드럽게 착지"
+    let name: String
+    let code: String
+    let note: String
 }
 
 struct AnimationItem: Identifiable {
@@ -68,9 +79,20 @@ struct AnimationData {
                 ),
             ],
             properties: [
-                AnimProperty(label: "빠르기", key: "response:", desc: "낮을수록 빠름. 0.3~0.5. 0.3이면 빠릿, 0.6이면 묵직"),
-                AnimProperty(label: "탄성", key: "dampingFraction:", desc: "1.0이면 안 튐, 0.5면 많이 통통 튐. 보통 0.6~0.8"),
-                AnimProperty(label: "빠른 설정", key: ".bouncy / .smooth / .snappy", desc: "iOS 17+. bouncy=통통, smooth=부드럽게, snappy=빠르게"),
+                AnimProperty(
+                    label: "빠르기", key: "response:",
+                    desc: "낮을수록 빠름. 0.3~0.5. 0.3이면 빠릿, 0.6이면 묵직",
+                    paramKey: "response", minValue: 0.1, maxValue: 1.0, defaultValue: 0.4, step: 0.01
+                ),
+                AnimProperty(
+                    label: "탄성", key: "dampingFraction:",
+                    desc: "1.0이면 안 튐, 0.5면 많이 통통 튐. 보통 0.6~0.8",
+                    paramKey: "dampingFraction", minValue: 0.1, maxValue: 1.0, defaultValue: 0.7, step: 0.01
+                ),
+                AnimProperty(
+                    label: "빠른 설정", key: ".bouncy / .smooth / .snappy",
+                    desc: "iOS 17+. bouncy=통통, smooth=부드럽게, snappy=빠르게"
+                ),
             ],
             swiftui: """
 // iOS 17+ 간단 버전
@@ -108,8 +130,15 @@ struct AnimationData {
                 ),
             ],
             properties: [
-                AnimProperty(label: "기본 바운스", key: ".bouncy", desc: "iOS 17+. 이거 하나면 충분"),
-                AnimProperty(label: "바운스 강도", key: "extraBounce: 0~0.4", desc: "0이면 기본, 0.4면 더 많이 통통"),
+                AnimProperty(
+                    label: "기본 바운스", key: ".bouncy",
+                    desc: "iOS 17+. 이거 하나면 충분"
+                ),
+                AnimProperty(
+                    label: "바운스 강도", key: "extraBounce:",
+                    desc: "0이면 기본, 0.4면 더 많이 통통. 0~0.5",
+                    paramKey: "extraBounce", minValue: 0.0, maxValue: 0.5, defaultValue: 0.25, step: 0.01
+                ),
             ],
             swiftui: """
 // iOS 17+
@@ -121,7 +150,7 @@ struct AnimationData {
     value: isExpanded
 )
 """,
-            prompt: "SwiftUI [뷰]에 .bouncy 애니메이션을 적용해서 고무공처럼 통통 튀는 느낌을 줘."
+            prompt: "SwiftUI [뷰]에 .bouncy 애니메이션을 적용해서 고무공처럼 통통 튀는 느낌을 줘. extraBounce [0.25]로."
         ),
 
         AnimationItem(
@@ -145,8 +174,15 @@ struct AnimationData {
                 ),
             ],
             properties: [
-                AnimProperty(label: "투명도", key: ".opacity(0~1)", desc: "0이면 안 보임, 1이면 완전히 보임"),
-                AnimProperty(label: "속도", key: ".easeInOut(duration: 0.3)", desc: "0.2~0.4초가 자연스러움"),
+                AnimProperty(
+                    label: "투명도", key: ".opacity(0~1)",
+                    desc: "0이면 안 보임, 1이면 완전히 보임"
+                ),
+                AnimProperty(
+                    label: "속도", key: "duration:",
+                    desc: "0.2~0.4초가 자연스러움",
+                    paramKey: "duration", minValue: 0.1, maxValue: 2.0, defaultValue: 0.3, step: 0.05, format: "%.1f"
+                ),
             ],
             swiftui: """
 if isVisible {
@@ -187,8 +223,14 @@ SomeView()
                 ),
             ],
             properties: [
-                AnimProperty(label: "방향", key: ".move(edge: .bottom)", desc: "bottom이 가장 많이 쓰임"),
-                AnimProperty(label: "조합", key: ".combined(with: .opacity)", desc: "슬라이드만 쓰면 어색함. opacity 같이 써야 자연스러움"),
+                AnimProperty(
+                    label: "방향", key: ".move(edge: .bottom)",
+                    desc: "bottom이 가장 많이 쓰임"
+                ),
+                AnimProperty(
+                    label: "조합", key: ".combined(with: .opacity)",
+                    desc: "슬라이드만 쓰면 어색함. opacity 같이 써야 자연스러움"
+                ),
             ],
             swiftui: """
 if showSheet {
@@ -227,9 +269,15 @@ if showSheet {
                 ),
             ],
             properties: [
-                AnimProperty(label: "기본", key: ".easeInOut(duration: 0.3)", desc: "가장 무난하고 자연스러운 선택"),
-                AnimProperty(label: "들어올 때만", key: ".easeIn(duration: 0.25)", desc: "빠르게 나타날 때"),
-                AnimProperty(label: "나갈 때만", key: ".easeOut(duration: 0.25)", desc: "부드럽게 사라질 때"),
+                AnimProperty(
+                    label: "속도", key: "duration:",
+                    desc: "0.2~0.4초가 가장 자연스러운 범위",
+                    paramKey: "duration", minValue: 0.1, maxValue: 2.0, defaultValue: 0.3, step: 0.05, format: "%.1f"
+                ),
+                AnimProperty(
+                    label: "방향", key: ".easeIn / .easeOut",
+                    desc: "easeIn=빠르게 나타남, easeOut=부드럽게 사라짐"
+                ),
             ],
             swiftui: """
 .animation(.easeInOut(duration: 0.3), value: state)
@@ -260,8 +308,15 @@ if showSheet {
                 ),
             ],
             properties: [
-                AnimProperty(label: "기본 사용", key: ".linear(duration: 1.0)", desc: "반복 애니메이션에 가장 자연스러움"),
-                AnimProperty(label: "무한 반복", key: ".repeatForever(autoreverses: false)", desc: "autoreverses: false = 같은 방향 계속 반복"),
+                AnimProperty(
+                    label: "회전 속도", key: "duration:",
+                    desc: "1회전 시간. 낮을수록 빠름",
+                    paramKey: "duration", minValue: 0.3, maxValue: 3.0, defaultValue: 1.0, step: 0.1, format: "%.1f"
+                ),
+                AnimProperty(
+                    label: "무한 반복", key: ".repeatForever(autoreverses: false)",
+                    desc: "autoreverses: false = 같은 방향 계속 반복"
+                ),
             ],
             swiftui: """
 @State var isRotating = false
@@ -277,7 +332,7 @@ Circle()
     )
     .onAppear { isRotating = true }
 """,
-            prompt: "SwiftUI [뷰]를 linear 애니메이션으로 [회전/이동]시켜줘. 무한 반복."
+            prompt: "SwiftUI [뷰]를 linear 애니메이션으로 [회전/이동]시켜줘. 무한 반복. duration [1.0]초."
         ),
 
         // ─── 조합 ────────────────────────────────────────────
@@ -308,8 +363,21 @@ Circle()
                 ),
             ],
             properties: [
-                AnimProperty(label: "크기", key: ".scaleEffect(0.92)", desc: "0.90~0.95가 자연스러운 탭 반응"),
-                AnimProperty(label: "반응 방식", key: ".spring(response:dampingFraction:)", desc: "spring을 써야 눌리는 느낌이 남"),
+                AnimProperty(
+                    label: "눌림 크기", key: "scaleEffect:",
+                    desc: "0.90~0.95가 자연스러운 탭 반응",
+                    paramKey: "scaleEffect", minValue: 0.80, maxValue: 0.99, defaultValue: 0.92, step: 0.01
+                ),
+                AnimProperty(
+                    label: "반응 빠르기", key: "response:",
+                    desc: "낮을수록 빠른 반응감",
+                    paramKey: "response", minValue: 0.1, maxValue: 0.8, defaultValue: 0.3, step: 0.01
+                ),
+                AnimProperty(
+                    label: "탄성", key: "dampingFraction:",
+                    desc: "0.5면 통통 복귀, 0.8이면 부드럽게 복귀",
+                    paramKey: "dampingFraction", minValue: 0.1, maxValue: 1.0, defaultValue: 0.6, step: 0.01
+                ),
             ],
             swiftui: """
 @State var isPressed = false
@@ -323,7 +391,7 @@ Button("확인") { }
             .onEnded { _ in isPressed = false }
     )
 """,
-            prompt: "SwiftUI [버튼/카드]를 탭했을 때 살짝 눌리는 scale 피드백 애니메이션을 만들어줘."
+            prompt: "SwiftUI [버튼/카드]를 탭했을 때 살짝 눌리는 scale 피드백을 만들어줘. scaleEffect [0.92], response [0.3], dampingFraction [0.6]."
         ),
 
         AnimationItem(
@@ -347,8 +415,16 @@ Button("확인") { }
                 ),
             ],
             properties: [
-                AnimProperty(label: "흔들림 폭", key: "LinearKeyframe(-12)", desc: "8~15pt가 자연스러움"),
-                AnimProperty(label: "흔들림 속도", key: "duration: 0.08", desc: "0.06~0.1초가 iOS 비밀번호 오류와 비슷"),
+                AnimProperty(
+                    label: "흔들림 폭", key: "amplitude:",
+                    desc: "8~15pt가 자연스러움",
+                    paramKey: "amplitude", minValue: 4, maxValue: 24, defaultValue: 12, step: 1, format: "%.0f"
+                ),
+                AnimProperty(
+                    label: "흔들림 속도", key: "keyframe duration:",
+                    desc: "0.06~0.1초가 iOS 비밀번호 오류와 비슷",
+                    paramKey: "shakeDuration", minValue: 0.04, maxValue: 0.15, defaultValue: 0.08, step: 0.01
+                ),
             ],
             swiftui: """
 TextField("비밀번호", text: $password)
@@ -368,7 +444,7 @@ TextField("비밀번호", text: $password)
         }
     }
 """,
-            prompt: "SwiftUI [입력창/뷰]에서 오류 시 좌우로 흔들리는 shake 애니메이션을 만들어줘."
+            prompt: "SwiftUI [입력창/뷰]에서 오류 시 좌우로 흔들리는 shake 애니메이션을 만들어줘. amplitude [12]pt, duration [0.08]s."
         ),
 
         AnimationItem(
@@ -392,8 +468,16 @@ TextField("비밀번호", text: $password)
                 ),
             ],
             properties: [
-                AnimProperty(label: "숨쉬기 크기", key: ".scaleEffect(1.15)", desc: "1.05~1.2 범위가 자연스러움"),
-                AnimProperty(label: "주기", key: ".easeInOut(duration: 1.2)", desc: "0.8~1.5초가 자연스러운 속도"),
+                AnimProperty(
+                    label: "팽창 크기", key: "scaleEffect max:",
+                    desc: "1.05~1.2 범위가 자연스러움",
+                    paramKey: "scaleMax", minValue: 1.02, maxValue: 1.35, defaultValue: 1.15, step: 0.01
+                ),
+                AnimProperty(
+                    label: "주기", key: "duration:",
+                    desc: "0.8~1.5초가 자연스러운 숨쉬기 속도",
+                    paramKey: "cycleDuration", minValue: 0.4, maxValue: 2.5, defaultValue: 1.2, step: 0.1, format: "%.1f"
+                ),
             ],
             swiftui: """
 @State var isPulsing = false
@@ -408,7 +492,7 @@ Circle()
     )
     .onAppear { isPulsing = true }
 """,
-            prompt: "SwiftUI [원/뷰]가 숨쉬듯 천천히 커지고 작아지는 pulse 애니메이션을 만들어줘."
+            prompt: "SwiftUI [원/뷰]가 숨쉬듯 천천히 커지고 작아지는 pulse 애니메이션을 만들어줘. scaleMax [1.15], duration [1.2]초."
         ),
 
         AnimationItem(
@@ -432,8 +516,15 @@ Circle()
                 ),
             ],
             properties: [
-                AnimProperty(label: "시차 간격", key: "Double(index) * 0.06", desc: "0.04~0.08초가 자연스러운 순차 속도"),
-                AnimProperty(label: "시작 위치", key: ".offset(y: 20 → 0)", desc: "15~25pt 아래에서 올라오는 게 자연스러움"),
+                AnimProperty(
+                    label: "시차 간격", key: "delay interval:",
+                    desc: "0.04~0.08초가 자연스러운 순차 속도",
+                    paramKey: "delayInterval", minValue: 0.01, maxValue: 0.15, defaultValue: 0.06, step: 0.01
+                ),
+                AnimProperty(
+                    label: "시작 위치", key: ".offset(y:)",
+                    desc: "15~25pt 아래에서 올라오는 게 자연스러움"
+                ),
             ],
             swiftui: """
 ForEach(Array(items.enumerated()), id: \\.offset) { index, item in
@@ -471,8 +562,15 @@ ForEach(Array(items.enumerated()), id: \\.offset) { index, item in
                 ),
             ],
             properties: [
-                AnimProperty(label: "파도 간격", key: ".delay(Double(i) * 0.1)", desc: "0.08~0.12초가 자연스러운 파도"),
-                AnimProperty(label: "높낮이", key: "height: 6 → 24", desc: "차이가 클수록 파도가 극적으로 보임"),
+                AnimProperty(
+                    label: "파도 간격", key: "delay interval:",
+                    desc: "0.08~0.12초가 자연스러운 파도",
+                    paramKey: "delayInterval", minValue: 0.03, maxValue: 0.2, defaultValue: 0.1, step: 0.01
+                ),
+                AnimProperty(
+                    label: "높낮이", key: "height range:",
+                    desc: "차이가 클수록 파도가 극적으로 보임"
+                ),
             ],
             swiftui: """
 @State var isAnimating = false
@@ -491,7 +589,7 @@ HStack(spacing: 4) {
 }
 .onAppear { isAnimating = true }
 """,
-            prompt: "SwiftUI에서 파도처럼 위아래로 움직이는 wave 이퀄라이저 애니메이션을 만들어줘."
+            prompt: "SwiftUI에서 파도처럼 위아래로 움직이는 wave 이퀄라이저 애니메이션을 만들어줘. delay [0.1]초 간격."
         ),
 
         AnimationItem(
@@ -515,8 +613,16 @@ HStack(spacing: 4) {
                 ),
             ],
             properties: [
-                AnimProperty(label: "시작 크기", key: ".scale(scale: 0.1)", desc: "0.1 = 10%에서 시작. 작을수록 더 극적인 등장"),
-                AnimProperty(label: "탄성", key: ".spring(bounce: 0.5)", desc: "0.5면 적당히 통통. iOS 17+"),
+                AnimProperty(
+                    label: "시작 크기", key: "startScale:",
+                    desc: "0.1 = 10%에서 시작. 작을수록 더 극적인 등장",
+                    paramKey: "startScale", minValue: 0.01, maxValue: 0.4, defaultValue: 0.1, step: 0.01
+                ),
+                AnimProperty(
+                    label: "탄성 강도", key: "bounce:",
+                    desc: "0.5면 적당히 통통. iOS 17+",
+                    paramKey: "bounce", minValue: 0.1, maxValue: 0.9, defaultValue: 0.5, step: 0.05
+                ),
             ],
             swiftui: """
 if showBadge {
@@ -528,7 +634,7 @@ if showBadge {
         .animation(.spring(bounce: 0.5), value: showBadge)
 }
 """,
-            prompt: "SwiftUI [뱃지/아이콘]이 나타날 때 뿅 하고 통통 튀며 등장하는 pop in 애니메이션을 만들어줘."
+            prompt: "SwiftUI [뱃지/아이콘]이 나타날 때 뿅 하고 통통 튀며 등장하는 pop in 애니메이션을 만들어줘. startScale [0.1], bounce [0.5]."
         ),
 
         AnimationItem(
@@ -552,8 +658,16 @@ if showBadge {
                 ),
             ],
             properties: [
-                AnimProperty(label: "저항 강도", key: "translation / 3.0", desc: "나눗수가 클수록 저항 강함. 3이 iOS와 비슷"),
-                AnimProperty(label: "복귀 탄성", key: ".spring(dampingFraction: 0.6)", desc: "낮을수록 복귀할 때 더 통통 튐"),
+                AnimProperty(
+                    label: "저항 강도", key: "resistanceFactor:",
+                    desc: "나눗수가 클수록 저항 강함. 3이 iOS와 비슷",
+                    paramKey: "resistanceFactor", minValue: 1.0, maxValue: 8.0, defaultValue: 3.0, step: 0.5, format: "%.1f"
+                ),
+                AnimProperty(
+                    label: "복귀 탄성", key: "dampingFraction:",
+                    desc: "낮을수록 복귀할 때 더 통통 튐",
+                    paramKey: "dampingFraction", minValue: 0.1, maxValue: 1.0, defaultValue: 0.6, step: 0.01
+                ),
             ],
             swiftui: """
 @State var dragOffset: CGFloat = 0
@@ -572,7 +686,7 @@ SomeView()
             }
     )
 """,
-            prompt: "SwiftUI 뷰를 드래그하면 고무줄처럼 저항감 있게 늘어나다가 손 떼면 spring으로 복귀하게 해줘."
+            prompt: "SwiftUI 뷰를 드래그하면 고무줄처럼 저항감 있게 늘어나다가 손 떼면 spring으로 복귀하게 해줘. resistanceFactor [3.0], dampingFraction [0.6]."
         ),
     ]
 }

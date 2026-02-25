@@ -1,15 +1,17 @@
 import SwiftUI
 import AppKit
 
-// MARK: - Detail Panel (macOS — split view right column)
+// MARK: - Detail Panel (macOS)
 
 struct DetailPanelView: View {
     let item: AnimationItem
 
-    @State private var copiedPrompt   = false
-    @State private var copiedCode     = false
-    @State private var showCode       = false
+    @State private var copiedPrompt     = false
+    @State private var copiedCode       = false
+    @State private var showCode         = false
     @State private var selectedExample: RealAppExample? = nil
+    @State private var propertyValues: [String: Double] = [:]
+    @State private var previewTrigger   = UUID()
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -80,11 +82,7 @@ struct DetailPanelView: View {
                                             isSelected: selectedExample?.name == example.name
                                         ) {
                                             withAnimation(.spring(response: 0.30, dampingFraction: 0.78)) {
-                                                if selectedExample?.name == example.name {
-                                                    selectedExample = nil
-                                                } else {
-                                                    selectedExample = example
-                                                }
+                                                selectedExample = selectedExample?.name == example.name ? nil : example
                                             }
                                         }
                                     }
@@ -126,30 +124,118 @@ struct DetailPanelView: View {
                         }
                     }
 
+                    // ── Interactive property section ──────────────────
                     if !item.properties.isEmpty {
+                        let sliders = item.properties.filter(\.isSlider)
+                        let infoOnly = item.properties.filter { !$0.isSlider }
+
                         ContentSection(title: "세부조절 옵션") {
-                            VStack(spacing: 8) {
-                                ForEach(item.properties, id: \.key) { prop in
-                                    PropRow(prop: prop)
+                            VStack(alignment: .leading, spacing: 14) {
+
+                                // Mini live preview (shown only when there are sliders)
+                                if !sliders.isEmpty {
+                                    InteractiveDemoView(id: item.id, values: propertyValues)
+                                        .frame(height: 160)
+                                        .background(Color(red: 0.97, green: 0.97, blue: 0.96))
+                                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                                        .id(previewTrigger)
+
+                                    Divider().overlay(Color.divider)
+                                }
+
+                                // Sliders
+                                ForEach(sliders, id: \.key) { prop in
+                                    if let key = prop.paramKey,
+                                       let min = prop.minValue,
+                                       let max = prop.maxValue,
+                                       let def = prop.defaultValue {
+                                        VStack(alignment: .leading, spacing: 5) {
+                                            HStack(alignment: .center) {
+                                                Text(prop.label)
+                                                    .font(.system(size: 13, weight: .semibold))
+                                                    .foregroundStyle(Color.textPrimary)
+                                                Text(prop.key)
+                                                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                                    .foregroundStyle(Color.textTertiary)
+                                                    .padding(.horizontal, 6).padding(.vertical, 2)
+                                                    .background(Color.appBg)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                                                Spacer()
+                                                Text(String(format: prop.format, propertyValues[key] ?? def))
+                                                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                                    .foregroundStyle(Color.textPrimary)
+                                                    .padding(.horizontal, 8).padding(.vertical, 3)
+                                                    .background(Color.white)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                                                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.cardBorder, lineWidth: 1))
+                                            }
+                                            Slider(
+                                                value: Binding(
+                                                    get: { propertyValues[key] ?? def },
+                                                    set: { propertyValues[key] = $0 }
+                                                ),
+                                                in: min...max,
+                                                step: prop.step ?? 0.01
+                                            ) {
+                                                EmptyView()
+                                            } minimumValueLabel: {
+                                                Text(String(format: prop.format, min))
+                                                    .font(.system(size: 9))
+                                                    .foregroundStyle(Color.textTertiary)
+                                            } maximumValueLabel: {
+                                                Text(String(format: prop.format, max))
+                                                    .font(.system(size: 9))
+                                                    .foregroundStyle(Color.textTertiary)
+                                            } onEditingChanged: { editing in
+                                                if !editing { previewTrigger = UUID() }
+                                            }
+                                            .tint(Color.chipActive)
+
+                                            Text(prop.desc)
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(Color.textTertiary)
+                                                .lineSpacing(2)
+                                        }
+                                    }
+                                }
+
+                                // Info-only rows (no slider)
+                                if !infoOnly.isEmpty {
+                                    if !sliders.isEmpty {
+                                        Divider().overlay(Color.divider).padding(.vertical, 2)
+                                    }
+                                    VStack(spacing: 8) {
+                                        ForEach(infoOnly, id: \.key) { prop in
+                                            PropRow(prop: prop)
+                                        }
+                                    }
                                 }
                             }
+                            .padding(14)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.cardBorder, lineWidth: 1))
                         }
                     }
 
+                    // ── AI Prompt ─────────────────────────────────────
                     ContentSection(title: "AI 프롬프트") {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text(item.prompt)
+                            Text(buildDynamicPrompt())
                                 .font(.system(size: 13))
                                 .italic()
                                 .foregroundStyle(Color.textSecondary)
                                 .lineSpacing(5)
 
-                            Text("[ ] 부분을 원하는 내용으로 바꿔서 AI에 붙여넣으세요")
+                            let hasSliders = item.properties.contains(where: \.isSlider)
+                            Text(hasSliders
+                                 ? "슬라이더로 조정한 값이 자동으로 반영됩니다"
+                                 : "[ ] 부분을 원하는 내용으로 바꿔서 AI에 붙여넣으세요")
                                 .font(.system(size: 11))
                                 .foregroundStyle(Color.textTertiary)
 
                             Button {
-                                copyToClipboard(item.prompt)
+                                copyToClipboard(buildDynamicPrompt())
                                 withAnimation { copiedPrompt = true }
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.44) {
                                     withAnimation { copiedPrompt = false }
@@ -175,7 +261,7 @@ struct DetailPanelView: View {
                         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.cardBorder, lineWidth: 1))
                     }
 
-                    // SwiftUI code toggle
+                    // ── SwiftUI code toggle ───────────────────────────
                     VStack(alignment: .leading, spacing: 10) {
                         Button {
                             withAnimation(.spring(response: 0.28, dampingFraction: 0.80)) {
@@ -232,11 +318,371 @@ struct DetailPanelView: View {
             }
         }
         .background(Color.appBg)
+        .onAppear { initPropertyValues() }
+    }
+
+    // MARK: - Helpers
+
+    private func initPropertyValues() {
+        var values: [String: Double] = [:]
+        for prop in item.properties {
+            if let key = prop.paramKey, let def = prop.defaultValue {
+                values[key] = def
+            }
+        }
+        propertyValues = values
+    }
+
+    private func buildDynamicPrompt() -> String {
+        let sliders = item.properties.filter(\.isSlider)
+        guard !sliders.isEmpty else { return item.prompt }
+        let valueStr = sliders.compactMap { prop -> String? in
+            guard let key = prop.paramKey, let val = propertyValues[key] else { return nil }
+            return "\(key) \(String(format: prop.format, val))"
+        }.joined(separator: ", ")
+        // Replace bracketed placeholders with actual values
+        var result = item.prompt
+        for prop in sliders {
+            guard let key = prop.paramKey, let val = propertyValues[key] else { continue }
+            let formatted = String(format: prop.format, val)
+            // Replace patterns like [0.4] or [12] with current value
+            result = result.replacingOccurrences(
+                of: "\\[[0-9.]+\\]",
+                with: formatted,
+                options: .regularExpression,
+                range: result.range(of: result)
+            )
+        }
+        return result
     }
 
     private func copyToClipboard(_ text: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
+    }
+}
+
+// MARK: - Interactive Demo View
+
+private let liveInk      = Color(red: 0.13, green: 0.12, blue: 0.11)
+private let liveInkLight = Color(red: 0.13, green: 0.12, blue: 0.11).opacity(0.18)
+private let liveSW: CGFloat = 2.0
+
+private func liveCircle(_ size: CGFloat = 36) -> some View {
+    Circle().stroke(liveInk, lineWidth: liveSW).frame(width: size, height: size)
+}
+
+struct InteractiveDemoView: View {
+    let id: String
+    let values: [String: Double]
+
+    var body: some View {
+        ZStack {
+            Color(red: 0.97, green: 0.97, blue: 0.96)
+            Group {
+                switch id {
+                case "spring":
+                    LiveSpringDemo(
+                        response: values["response"] ?? 0.4,
+                        dampingFraction: values["dampingFraction"] ?? 0.7
+                    )
+                case "bouncy":
+                    LiveBouncyDemo(extraBounce: values["extraBounce"] ?? 0.25)
+                case "fade":
+                    LiveFadeDemo(duration: values["duration"] ?? 0.3)
+                case "ease":
+                    LiveEaseDemo(duration: values["duration"] ?? 0.3)
+                case "linear":
+                    LiveLinearDemo(duration: values["duration"] ?? 1.0)
+                case "scale":
+                    LiveScaleDemo(
+                        scaleAmount: values["scaleEffect"] ?? 0.92,
+                        response: values["response"] ?? 0.3,
+                        dampingFraction: values["dampingFraction"] ?? 0.6
+                    )
+                case "shake":
+                    LiveShakeDemo(
+                        amplitude: values["amplitude"] ?? 12,
+                        shakeDuration: values["shakeDuration"] ?? 0.08
+                    )
+                case "pulse":
+                    LivePulseDemo(
+                        scaleMax: values["scaleMax"] ?? 1.15,
+                        cycleDuration: values["cycleDuration"] ?? 1.2
+                    )
+                case "stagger":
+                    LiveStaggerDemo(delayInterval: values["delayInterval"] ?? 0.06)
+                case "wave":
+                    LiveWaveDemo(delayInterval: values["delayInterval"] ?? 0.1)
+                case "pop-in":
+                    LivePopInDemo(
+                        startScale: values["startScale"] ?? 0.1,
+                        bounce: values["bounce"] ?? 0.5
+                    )
+                case "rubber-band":
+                    LiveRubberBandDemo(
+                        resistanceFactor: values["resistanceFactor"] ?? 3.0,
+                        dampingFraction: values["dampingFraction"] ?? 0.6
+                    )
+                default:
+                    liveCircle()
+                }
+            }
+            .scaleEffect(1.1)
+        }
+    }
+}
+
+// MARK: - Parameterized live demos
+
+private let errorRed = Color(red: 0.88, green: 0.20, blue: 0.18)
+
+private struct LiveSpringDemo: View {
+    let response: Double
+    let dampingFraction: Double
+    @State private var up = false
+    var body: some View {
+        liveCircle()
+            .offset(y: up ? -28 : 28)
+            .animation(.spring(response: response, dampingFraction: dampingFraction), value: up)
+            .onAppear {
+                let interval = max(response * 2.5, 0.7)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { up.toggle() }
+                Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in up.toggle() }
+            }
+    }
+}
+
+private struct LiveBouncyDemo: View {
+    let extraBounce: Double
+    @State private var big = false
+    var body: some View {
+        liveCircle()
+            .scaleEffect(big ? 1.55 : 0.45)
+            .animation(.bouncy(duration: 0.5, extraBounce: extraBounce), value: big)
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { big.toggle() }
+                Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in big.toggle() }
+            }
+    }
+}
+
+private struct LiveFadeDemo: View {
+    let duration: Double
+    @State private var visible = false
+    var body: some View {
+        liveCircle()
+            .opacity(visible ? 1 : 0.05)
+            .animation(.easeInOut(duration: duration), value: visible)
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { visible.toggle() }
+                Timer.scheduledTimer(withTimeInterval: duration + 0.5, repeats: true) { _ in visible.toggle() }
+            }
+    }
+}
+
+private struct LiveEaseDemo: View {
+    let duration: Double
+    @State private var moved = false
+    var body: some View {
+        ZStack {
+            Rectangle().fill(liveInkLight).frame(width: 72, height: liveSW)
+            liveCircle()
+                .offset(x: moved ? 28 : -28)
+                .animation(.easeInOut(duration: duration), value: moved)
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { moved.toggle() }
+            Timer.scheduledTimer(withTimeInterval: duration + 0.4, repeats: true) { _ in moved.toggle() }
+        }
+    }
+}
+
+private struct LiveLinearDemo: View {
+    let duration: Double
+    @State private var rotating = false
+    var body: some View {
+        Circle()
+            .trim(from: 0, to: 0.72)
+            .stroke(liveInk, style: StrokeStyle(lineWidth: liveSW, lineCap: .round))
+            .frame(width: 38, height: 38)
+            .rotationEffect(.degrees(rotating ? 360 : 0))
+            .animation(.linear(duration: duration).repeatForever(autoreverses: false), value: rotating)
+            .onAppear { rotating = true }
+    }
+}
+
+private struct LiveScaleDemo: View {
+    let scaleAmount: Double
+    let response: Double
+    let dampingFraction: Double
+    @State private var pressed = false
+    var body: some View {
+        ZStack {
+            Circle().stroke(liveInk, lineWidth: liveSW).frame(width: 46, height: 46)
+                .scaleEffect(pressed ? scaleAmount : 1.0)
+                .animation(.spring(response: response, dampingFraction: dampingFraction), value: pressed)
+            if pressed {
+                Circle().fill(liveInkLight).frame(width: 42, height: 42).transition(.opacity)
+            }
+        }
+        .onAppear {
+            func pulse() {
+                pressed = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) { pressed = false }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { pulse() }
+            Timer.scheduledTimer(withTimeInterval: 1.3, repeats: true) { _ in pulse() }
+        }
+    }
+}
+
+private struct LiveShakeDemo: View {
+    let amplitude: Double
+    let shakeDuration: Double
+    @State private var trigger = false
+    @State private var isError = false
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(errorRed.opacity(isError ? 0.10 : 0))
+                .frame(width: 80, height: 44)
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(isError ? errorRed : liveInk, lineWidth: isError ? 1.8 : liveSW)
+                .frame(width: 80, height: 44)
+            HStack(spacing: 6) {
+                ForEach(0..<5) { _ in
+                    Circle().fill(isError ? errorRed : liveInk).frame(width: 6, height: 6).opacity(0.55)
+                }
+            }
+        }
+        .keyframeAnimator(initialValue: 0.0, trigger: trigger) { v, x in v.offset(x: x) } keyframes: { _ in
+            KeyframeTrack {
+                LinearKeyframe(0,                        duration: 0.04)
+                LinearKeyframe(-amplitude,               duration: shakeDuration)
+                LinearKeyframe(amplitude,                duration: shakeDuration)
+                LinearKeyframe(-amplitude * 0.65,        duration: shakeDuration)
+                LinearKeyframe(amplitude * 0.65,         duration: shakeDuration)
+                LinearKeyframe(0,                        duration: shakeDuration * 0.6)
+            }
+        }
+        .onAppear {
+            func shake() {
+                isError = true; trigger.toggle()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { isError = false }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { shake() }
+            Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in shake() }
+        }
+    }
+}
+
+private struct LivePulseDemo: View {
+    let scaleMax: Double
+    let cycleDuration: Double
+    @State private var pulsing = false
+    var body: some View {
+        ZStack {
+            Circle().fill(liveInk.opacity(pulsing ? 0.04 : 0.14)).frame(width: 64, height: 64)
+                .scaleEffect(pulsing ? scaleMax + 0.18 : 0.82)
+            Circle().fill(liveInk.opacity(pulsing ? 0.28 : 0.62)).frame(width: 38, height: 38)
+                .scaleEffect(pulsing ? scaleMax : 0.88)
+        }
+        .animation(.easeInOut(duration: cycleDuration).repeatForever(autoreverses: true), value: pulsing)
+        .onAppear { pulsing = true }
+    }
+}
+
+private struct LiveStaggerDemo: View {
+    let delayInterval: Double
+    @State private var appeared = false
+    var body: some View {
+        HStack(spacing: 10) {
+            ForEach(0..<4, id: \.self) { i in
+                liveCircle(22)
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 16)
+                    .animation(
+                        .spring(response: 0.38, dampingFraction: 0.70)
+                            .delay(Double(i) * delayInterval),
+                        value: appeared
+                    )
+            }
+        }
+        .onAppear {
+            let cycle = Double(4) * delayInterval + 1.0
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { appeared = true }
+            Timer.scheduledTimer(withTimeInterval: cycle, repeats: true) { _ in
+                appeared = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { appeared = true }
+            }
+        }
+    }
+}
+
+private struct LiveWaveDemo: View {
+    let delayInterval: Double
+    @State private var animating = false
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(0..<5, id: \.self) { i in
+                RoundedRectangle(cornerRadius: 2)
+                    .stroke(liveInk, lineWidth: liveSW)
+                    .frame(width: 6, height: animating ? 34 : 8)
+                    .animation(
+                        .easeInOut(duration: 0.44)
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(i) * delayInterval),
+                        value: animating
+                    )
+            }
+        }
+        .onAppear { animating = true }
+    }
+}
+
+private struct LivePopInDemo: View {
+    let startScale: Double
+    let bounce: Double
+    @State private var show = false
+    var body: some View {
+        ZStack {
+            if show {
+                liveCircle()
+                    .transition(.scale(scale: startScale).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(bounce: bounce), value: show)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { show = true }
+            Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in
+                show = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { show = true }
+            }
+        }
+    }
+}
+
+private struct LiveRubberBandDemo: View {
+    let resistanceFactor: Double
+    let dampingFraction: Double
+    @State private var offset: CGFloat = 0
+    var body: some View {
+        VStack(spacing: 0) {
+            Rectangle().fill(liveInkLight).frame(width: liveSW, height: 30)
+            liveCircle().offset(y: offset)
+        }
+        .onAppear {
+            func snap() {
+                let pull = 32.0 / resistanceFactor * 3
+                withAnimation(.linear(duration: 0.5)) { offset = pull }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.52) {
+                    withAnimation(.spring(response: 0.38, dampingFraction: dampingFraction)) { offset = 0 }
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { snap() }
+            Timer.scheduledTimer(withTimeInterval: 2.2, repeats: true) { _ in snap() }
+        }
     }
 }
 
@@ -322,13 +768,10 @@ private struct MiniAnimScene: View {
 
 private let mc = Color(red: 0.13, green: 0.12, blue: 0.11)
 
-// Heart — pop scale
 private struct MiniHeart: View {
     @State private var popped = false
     var body: some View {
-        Image(systemName: "heart.fill")
-            .font(.system(size: 20))
-            .foregroundStyle(mc.opacity(0.25))
+        Image(systemName: "heart.fill").font(.system(size: 20)).foregroundStyle(mc.opacity(0.25))
             .scaleEffect(popped ? 1.35 : 0.85)
             .animation(.spring(response: 0.28, dampingFraction: 0.52), value: popped)
             .onAppear { Timer.scheduledTimer(withTimeInterval: 1.12, repeats: true) { _ in
@@ -336,14 +779,10 @@ private struct MiniHeart: View {
             }}
     }
 }
-
-// Button — press scale
 private struct MiniButton: View {
     @State private var pressed = false
     var body: some View {
-        RoundedRectangle(cornerRadius: 5)
-            .fill(mc.opacity(0.18))
-            .frame(width: 38, height: 16)
+        RoundedRectangle(cornerRadius: 5).fill(mc.opacity(0.18)).frame(width: 38, height: 16)
             .scaleEffect(pressed ? 0.88 : 1.0)
             .animation(.spring(response: 0.22, dampingFraction: 0.55), value: pressed)
             .onAppear { Timer.scheduledTimer(withTimeInterval: 1.12, repeats: true) { _ in
@@ -351,175 +790,102 @@ private struct MiniButton: View {
             }}
     }
 }
-
-// Pin — shake + red error
 private struct MiniPin: View {
-    @State private var trigger = false
-    @State private var err = false
+    @State private var trigger = false; @State private var err = false
     var body: some View {
         HStack(spacing: 5) {
-            ForEach(0..<4) { _ in
-                Circle()
-                    .fill(err ? Color(red: 0.88, green: 0.20, blue: 0.18).opacity(0.6) : mc.opacity(0.28))
-                    .frame(width: 7, height: 7)
-            }
+            ForEach(0..<4) { _ in Circle().fill(err ? Color(red: 0.88, green: 0.20, blue: 0.18).opacity(0.6) : mc.opacity(0.28)).frame(width: 7, height: 7) }
         }
         .keyframeAnimator(initialValue: 0.0, trigger: trigger) { v, x in v.offset(x: x) } keyframes: { _ in
-            KeyframeTrack {
-                LinearKeyframe(0,   duration: 0.03)
-                LinearKeyframe(-8,  duration: 0.06)
-                LinearKeyframe(8,   duration: 0.06)
-                LinearKeyframe(-5,  duration: 0.05)
-                LinearKeyframe(5,   duration: 0.05)
-                LinearKeyframe(0,   duration: 0.04)
-            }
+            KeyframeTrack { LinearKeyframe(0, duration: 0.03); LinearKeyframe(-8, duration: 0.06); LinearKeyframe(8, duration: 0.06); LinearKeyframe(-5, duration: 0.05); LinearKeyframe(5, duration: 0.05); LinearKeyframe(0, duration: 0.04) }
         }
         .onAppear { Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in
-            err = true; trigger.toggle()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) { err = false }
+            err = true; trigger.toggle(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) { err = false }
         }}
     }
 }
-
-// Waveform — equalizer bars
 private struct MiniWaveform: View {
     @State private var on = false
     let bases: [CGFloat] = [0.08, 0.18, 0.06, 0.16, 0.10, 0.14, 0.08]
     var body: some View {
         HStack(alignment: .center, spacing: 3) {
             ForEach(Array(bases.enumerated()), id: \.offset) { i, b in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(mc.opacity(0.28))
+                RoundedRectangle(cornerRadius: 2).fill(mc.opacity(0.28))
                     .frame(width: 4, height: on ? CGFloat.random(in: 8...26) : b * 40 + 5)
-                    .animation(
-                        .easeInOut(duration: Double.random(in: 0.3...0.55))
-                            .repeatForever(autoreverses: true)
-                            .delay(Double(i) * 0.08),
-                        value: on
-                    )
+                    .animation(.easeInOut(duration: Double.random(in: 0.3...0.55)).repeatForever(autoreverses: true).delay(Double(i) * 0.08), value: on)
             }
         }
         .onAppear { on = true }
     }
 }
-
-// Pull to refresh
 private struct MiniPullRefresh: View {
     @State private var pulling = false
     var body: some View {
         VStack(spacing: 2) {
-            Image(systemName: "arrow.clockwise")
-                .font(.system(size: 9, weight: .semibold))
+            Image(systemName: "arrow.clockwise").font(.system(size: 9, weight: .semibold))
                 .foregroundStyle(mc.opacity(pulling ? 0.45 : 0.15))
                 .rotationEffect(.degrees(pulling ? 360 : 0))
                 .animation(.linear(duration: 0.7).repeatForever(autoreverses: false), value: pulling)
-            VStack(spacing: 3) {
-                ForEach(0..<3) { i in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(mc.opacity(0.15))
-                        .frame(width: CGFloat(28 - i * 4), height: 4)
-                }
-            }
-            .offset(y: pulling ? -4 : 0)
-            .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: pulling)
+            VStack(spacing: 3) { ForEach(0..<3) { i in RoundedRectangle(cornerRadius: 2).fill(mc.opacity(0.15)).frame(width: CGFloat(28 - i * 4), height: 4) } }
+                .offset(y: pulling ? -4 : 0)
+                .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: pulling)
         }
         .onAppear { pulling = true }
     }
 }
-
-// Bottom sheet — slides up/down
 private struct MiniBottomSheet: View {
     @State private var shown = false
     var body: some View {
         ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 4)
-                .stroke(mc.opacity(0.15), lineWidth: 1)
-                .frame(width: 34, height: 42)
-            if shown {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(mc.opacity(0.20))
-                    .frame(width: 34, height: 20)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
+            RoundedRectangle(cornerRadius: 4).stroke(mc.opacity(0.15), lineWidth: 1).frame(width: 34, height: 42)
+            if shown { RoundedRectangle(cornerRadius: 4).fill(mc.opacity(0.20)).frame(width: 34, height: 20).transition(.move(edge: .bottom).combined(with: .opacity)) }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.72), value: shown)
         .onAppear { Timer.scheduledTimer(withTimeInterval: 1.44, repeats: true) { _ in shown.toggle() }}
     }
 }
-
-// List — stagger appear
 private struct MiniList: View {
     @State private var appeared = false
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             ForEach(0..<4) { i in
-                HStack(spacing: 3) {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(mc.opacity(0.22))
-                        .frame(width: CGFloat(20 + i * 3), height: 4)
-                    Spacer()
-                }
-                .frame(width: 40)
-                .opacity(appeared ? 1 : 0)
-                .offset(y: appeared ? 0 : 8)
-                .animation(.spring(response: 0.35, dampingFraction: 0.72).delay(Double(i) * 0.07), value: appeared)
+                HStack(spacing: 3) { RoundedRectangle(cornerRadius: 2).fill(mc.opacity(0.22)).frame(width: CGFloat(20 + i * 3), height: 4); Spacer() }
+                    .frame(width: 40).opacity(appeared ? 1 : 0).offset(y: appeared ? 0 : 8)
+                    .animation(.spring(response: 0.35, dampingFraction: 0.72).delay(Double(i) * 0.07), value: appeared)
             }
         }
         .onAppear {
-            Timer.scheduledTimer(withTimeInterval: 1.76, repeats: true) { _ in
-                appeared = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { appeared = true }
-            }
+            Timer.scheduledTimer(withTimeInterval: 1.76, repeats: true) { _ in appeared = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { appeared = true } }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) { appeared = true }
         }
     }
 }
-
-// Badge — pop in/out
 private struct MiniBadge: View {
     @State private var show = false
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(mc.opacity(0.15))
-                .frame(width: 26, height: 26)
-            if show {
-                Circle()
-                    .fill(mc.opacity(0.42))
-                    .frame(width: 11, height: 11)
-                    .offset(x: 4, y: -4)
-                    .transition(.scale(scale: 0.05).combined(with: .opacity))
-            }
+            RoundedRectangle(cornerRadius: 6).fill(mc.opacity(0.15)).frame(width: 26, height: 26)
+            if show { Circle().fill(mc.opacity(0.42)).frame(width: 11, height: 11).offset(x: 4, y: -4).transition(.scale(scale: 0.05).combined(with: .opacity)) }
         }
         .animation(.spring(bounce: 0.5), value: show)
         .onAppear {
-            Timer.scheduledTimer(withTimeInterval: 1.28, repeats: true) { _ in
-                show = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) { show = true }
-            }
+            Timer.scheduledTimer(withTimeInterval: 1.28, repeats: true) { _ in show = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) { show = true } }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { show = true }
         }
     }
 }
-
-// Spinner — rotating arc
 private struct MiniSpinner: View {
     @State private var rotating = false
     var body: some View {
         ZStack {
             Circle().stroke(mc.opacity(0.10), lineWidth: 2).frame(width: 22, height: 22)
-            Circle()
-                .trim(from: 0, to: 0.7)
-                .stroke(mc.opacity(0.32), style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                .frame(width: 22, height: 22)
+            Circle().trim(from: 0, to: 0.7).stroke(mc.opacity(0.32), style: StrokeStyle(lineWidth: 2, lineCap: .round)).frame(width: 22, height: 22)
                 .rotationEffect(.degrees(rotating ? 360 : 0))
                 .animation(.linear(duration: 1.0).repeatForever(autoreverses: false), value: rotating)
         }
         .onAppear { rotating = true }
     }
 }
-
-// Progress — fill
 private struct MiniProgress: View {
     @State private var progress: CGFloat = 0
     var body: some View {
@@ -529,54 +895,35 @@ private struct MiniProgress: View {
         }
         .animation(.easeInOut(duration: 1.2), value: progress)
         .onAppear {
-            Timer.scheduledTimer(withTimeInterval: 1.44, repeats: true) { _ in
-                progress = 0
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { progress = 1.0 }
-            }
+            Timer.scheduledTimer(withTimeInterval: 1.44, repeats: true) { _ in progress = 0; DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { progress = 1.0 } }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { progress = 1.0 }
         }
     }
 }
-
-// Transition — slide in
 private struct MiniTransition: View {
     @State private var shown = false
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 4).fill(mc.opacity(0.10)).frame(width: 26, height: 34)
-            if shown {
-                RoundedRectangle(cornerRadius: 4).fill(mc.opacity(0.24)).frame(width: 26, height: 34)
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
-            }
+            if shown { RoundedRectangle(cornerRadius: 4).fill(mc.opacity(0.24)).frame(width: 26, height: 34).transition(.move(edge: .trailing).combined(with: .opacity)) }
         }
         .animation(.easeInOut(duration: 0.5), value: shown)
         .onAppear { Timer.scheduledTimer(withTimeInterval: 1.28, repeats: true) { _ in shown.toggle() }}
     }
 }
-
-// Chat bubbles
 private struct MiniChat: View {
     @State private var step = 0
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 2) {
-                Circle().fill(mc.opacity(0.18)).frame(width: 8, height: 8)
-                RoundedRectangle(cornerRadius: 4).fill(mc.opacity(0.15)).frame(width: 20, height: 8)
-            }
-            .opacity(step >= 1 ? 1 : 0).offset(x: step >= 1 ? 0 : -10)
-            HStack(spacing: 2) {
-                Spacer()
-                RoundedRectangle(cornerRadius: 4).fill(mc.opacity(0.24)).frame(width: 16, height: 8)
-            }
-            .frame(width: 40)
-            .opacity(step >= 2 ? 1 : 0).offset(x: step >= 2 ? 0 : 10)
+            HStack(spacing: 2) { Circle().fill(mc.opacity(0.18)).frame(width: 8, height: 8); RoundedRectangle(cornerRadius: 4).fill(mc.opacity(0.15)).frame(width: 20, height: 8) }
+                .opacity(step >= 1 ? 1 : 0).offset(x: step >= 1 ? 0 : -10)
+            HStack(spacing: 2) { Spacer(); RoundedRectangle(cornerRadius: 4).fill(mc.opacity(0.24)).frame(width: 16, height: 8) }
+                .frame(width: 40).opacity(step >= 2 ? 1 : 0).offset(x: step >= 2 ? 0 : 10)
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.75), value: step)
         .onAppear {
             Timer.scheduledTimer(withTimeInterval: 1.92, repeats: true) { _ in
-                step = 0
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { step = 1 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) { step = 2 }
+                step = 0; DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { step = 1 }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) { step = 2 }
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { step = 1 }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) { step = 2 }
@@ -589,7 +936,6 @@ private struct MiniChat: View {
 private struct ContentSection<Content: View>: View {
     let title: String
     @ViewBuilder let content: Content
-
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title.uppercased())
