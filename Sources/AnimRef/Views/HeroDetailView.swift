@@ -21,8 +21,9 @@ struct DetailPanelView: View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
 
-                // ── TOP CARD: interactive demo + sliders ──────────────
+                // ── TOP CARD: demo preview + sliders ──────────────────
                 VStack(spacing: 0) {
+                    // Cream preview
                     ZStack(alignment: .bottomLeading) {
                         Group {
                             if hasSliders {
@@ -32,7 +33,7 @@ struct DetailPanelView: View {
                                 AnimationDemoView(id: item.id)
                             }
                         }
-                        .frame(height: hasSliders ? 240 : 320)
+                        .frame(height: hasSliders ? 230 : 320)
 
                         Text(item.situationCategory)
                             .font(.system(size: 10, weight: .semibold))
@@ -44,8 +45,9 @@ struct DetailPanelView: View {
                     }
                     .background(Color(red: 0.97, green: 0.97, blue: 0.96))
 
+                    // Slider rows
                     if hasSliders {
-                        VStack(alignment: .leading, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 12) {
                             Divider().overlay(Color.divider)
                             ForEach(sliders, id: \.key) { prop in
                                 SliderRow(
@@ -58,13 +60,16 @@ struct DetailPanelView: View {
                                 )
                             }
                         }
-                        .padding(14)
+                        .padding(.horizontal, 14)
+                        .padding(.top, 12)
+                        .padding(.bottom, 14)
                         .background(Color.white)
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 18))
                 .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.cardBorder, lineWidth: 1))
                 .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                // Copy icon — top-right
                 .overlay(alignment: .topTrailing) {
                     Button {
                         copyToClipboard(buildDynamicPrompt())
@@ -89,19 +94,26 @@ struct DetailPanelView: View {
                 .padding(.horizontal, 22)
                 .padding(.top, 18)
 
-                // ── AI Prompt — right below demo ──────────────────────
-                Text(buildDynamicPrompt())
-                    .font(.system(size: 12))
-                    .italic()
-                    .foregroundStyle(Color.textSecondary)
-                    .lineSpacing(4)
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white.opacity(0.7))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.cardBorder, lineWidth: 1))
-                    .padding(.horizontal, 22)
-                    .padding(.top, 10)
+                // ── 실시간 프롬프트 ────────────────────────────────────
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("실시간 프롬프트")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(Color.textTertiary)
+                        .kerning(0.8)
+                        .textCase(.uppercase)
+                    Text(buildDynamicPrompt())
+                        .font(.system(size: 12))
+                        .italic()
+                        .foregroundStyle(Color.textSecondary)
+                        .lineSpacing(4)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(12)
+                .background(Color.white.opacity(0.7))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.cardBorder, lineWidth: 1))
+                .padding(.horizontal, 22)
+                .padding(.top, 10)
 
                 // ── Title block ───────────────────────────────────────
                 VStack(alignment: .leading, spacing: 6) {
@@ -162,7 +174,7 @@ struct DetailPanelView: View {
                                         Text(ex.code)
                                             .font(.system(size: 12, design: .monospaced))
                                             .foregroundStyle(Color.textSecondary)
-                                            .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(12)
                                     }
                                     .background(Color.white)
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -179,7 +191,9 @@ struct DetailPanelView: View {
 
                     if !infoOnly.isEmpty {
                         ContentSection(title: "세부조절 옵션") {
-                            VStack(spacing: 8) { ForEach(infoOnly, id: \.key) { PropRow(prop: $0) } }
+                            VStack(spacing: 8) {
+                                ForEach(infoOnly, id: \.key) { PropRow(prop: $0) }
+                            }
                         }
                     }
 
@@ -196,13 +210,13 @@ struct DetailPanelView: View {
                             .foregroundStyle(Color.textTertiary)
                         }
                         .buttonStyle(.plain)
-
                         if showCode {
                             VStack(alignment: .leading, spacing: 8) {
                                 ScrollView(.horizontal, showsIndicators: false) {
                                     Text(item.swiftui)
                                         .font(.system(size: 12, design: .monospaced))
-                                        .foregroundStyle(Color.textSecondary).padding(14)
+                                        .foregroundStyle(Color.textSecondary)
+                                        .padding(14)
                                 }
                                 .background(Color.white)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -210,7 +224,9 @@ struct DetailPanelView: View {
                                 Button {
                                     copyToClipboard(item.swiftui)
                                     withAnimation { copiedCode = true }
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.44) { withAnimation { copiedCode = false } }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.44) {
+                                        withAnimation { copiedCode = false }
+                                    }
                                 } label: {
                                     Label(copiedCode ? "복사됨 ✓" : "코드 복사",
                                           systemImage: copiedCode ? "checkmark" : "doc.on.doc")
@@ -274,7 +290,7 @@ private struct SliderRow: View {
     var onEditEnd: () -> Void = {}
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .center) {
                 Text(prop.label)
                     .font(.system(size: 13, weight: .semibold))
@@ -287,12 +303,9 @@ private struct SliderRow: View {
                     .clipShape(RoundedRectangle(cornerRadius: 4))
                 Spacer()
                 Text(String(format: prop.format, value))
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
-                    .foregroundStyle(Color.textPrimary)
-                    .padding(.horizontal, 8).padding(.vertical, 3)
-                    .background(Color.appBg)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                    .frame(minWidth: 44, alignment: .center)
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Color.textSecondary)
+                    .frame(minWidth: 38, alignment: .trailing)
             }
             Slider(
                 value: $value,
@@ -310,10 +323,11 @@ private struct SliderRow: View {
                 if !editing { onEditEnd() }
             }
             .tint(Color.chipActive)
+            // Description — deliberately subtle
             Text(prop.desc)
-                .font(.system(size: 11))
-                .foregroundStyle(Color.textTertiary)
-                .lineSpacing(2)
+                .font(.system(size: 10))
+                .foregroundStyle(Color.textTertiary.opacity(0.65))
+                .lineSpacing(1)
         }
     }
 }
