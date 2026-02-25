@@ -1,104 +1,24 @@
 import SwiftUI
+import AppKit
 
-// MARK: - Scroll offset
+// MARK: - Detail Panel (macOS — split view right column)
 
-private struct ScrollOffsetKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-
-// MARK: - Hero Detail View
-
-struct HeroDetailView: View {
-    let sectionItems: [AnimationItem]
-    @Binding var currentIndex: Int
-    var onDismiss: () -> Void
-
-    @State private var appeared  = false
-    @GestureState private var swipeDelta: CGFloat = 0
-
-    private let dismissThreshold: CGFloat = 80
-
-    private var item: AnimationItem { sectionItems[min(currentIndex, sectionItems.count - 1)] }
-
-    var body: some View {
-        ZStack(alignment: .topTrailing) {
-            Color.appBg.ignoresSafeArea()
-
-            DetailPage(item: item)
-                .offset(x: max(0, swipeDelta * 0.65))
-                .gesture(
-                    DragGesture()
-                        .updating($swipeDelta) { val, state, _ in
-                            let isH = abs(val.translation.width) > abs(val.translation.height)
-                            if isH && val.translation.width > 0 { state = val.translation.width }
-                        }
-                        .onEnded { val in
-                            let isH = abs(val.translation.width) > abs(val.translation.height)
-                            let fast = val.predictedEndTranslation.width > 200
-                            if isH && (val.translation.width > dismissThreshold || fast) {
-                                dismiss()
-                            }
-                        }
-                )
-
-            // Close button
-            Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(Color.textSecondary)
-                    .frame(width: 32, height: 32)
-                    .background(Color.white.opacity(0.9))
-                    .clipShape(Circle())
-                    .shadow(color: .black.opacity(0.07), radius: 4, y: 1)
-            }
-            .buttonStyle(.plain)
-            .padding(.trailing, 16)
-            .padding(.top, 56)
-        }
-        .ignoresSafeArea()
-        // Smooth spring presentation (no jitter)
-        .scaleEffect(appeared ? 1.0 : 0.94)
-        .opacity(appeared ? 1.0 : 0)
-        .onAppear {
-            withAnimation(.spring(response: 0.36, dampingFraction: 0.90)) {
-                appeared = true
-            }
-        }
-        // Slide feedback while swiping
-        .shadow(
-            color: .black.opacity(swipeDelta > 0 ? 0.08 : 0),
-            radius: 20, x: -4, y: 0
-        )
-    }
-
-    private func dismiss() {
-        withAnimation(.spring(response: 0.30, dampingFraction: 0.90)) {
-            appeared = false
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.21) { onDismiss() }
-    }
-}
-
-// MARK: - Detail Page
-
-private struct DetailPage: View {
+struct DetailPanelView: View {
     let item: AnimationItem
 
-    @State private var copiedPrompt  = false
-    @State private var copiedCode    = false
-    @State private var showCode      = false
+    @State private var copiedPrompt   = false
+    @State private var copiedCode     = false
+    @State private var showCode       = false
     @State private var selectedExample: RealAppExample? = nil
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
 
-                // ── Animation only — isolated white card ──────────
-                let demoH = UIScreen.main.bounds.height * 0.47
+                // ── Animation demo card ───────────────────────────────
                 ZStack(alignment: .bottomLeading) {
                     AnimationDemoView(id: item.id)
-                        .frame(height: demoH)
+                        .frame(height: 320)
 
                     Text(item.situationCategory)
                         .font(.system(size: 10, weight: .semibold))
@@ -113,9 +33,9 @@ private struct DetailPage: View {
                     topLeadingRadius: 0, bottomLeadingRadius: 22,
                     bottomTrailingRadius: 22, topTrailingRadius: 0
                 ))
-                .shadow(color: .black.opacity(0.07), radius: 12, x: 0, y: 6)
+                .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 6)
 
-                // ── Title block ───────────────────────────────────
+                // ── Title block ───────────────────────────────────────
                 VStack(alignment: .leading, spacing: 6) {
                     Text(item.name)
                         .font(.system(size: 30, weight: .black))
@@ -131,18 +51,18 @@ private struct DetailPage: View {
                         .lineSpacing(5)
                         .padding(.top, 2)
                 }
-                .padding(.horizontal, 18)
-                .padding(.top, 22)
+                .padding(.horizontal, 22)
+                .padding(.top, 24)
                 .padding(.bottom, 8)
 
                 Divider()
                     .overlay(Color.divider)
-                    .padding(.horizontal, 18)
+                    .padding(.horizontal, 22)
                     .padding(.top, 14)
                     .padding(.bottom, 2)
 
-                // ── Content sections ──────────────────────────────
-                VStack(alignment: .leading, spacing: 26) {
+                // ── Content sections ──────────────────────────────────
+                VStack(alignment: .leading, spacing: 28) {
 
                     ContentSection(title: "언제 써요?") {
                         Text(item.when)
@@ -181,19 +101,17 @@ private struct DetailPage: View {
                                         .textCase(.uppercase)
                                         .kerning(0.8)
 
-                                    // Code block
-                                    HStack(alignment: .top, spacing: 10) {
+                                    ScrollView(.horizontal, showsIndicators: false) {
                                         Text(ex.code)
                                             .font(.system(size: 12, design: .monospaced))
                                             .foregroundStyle(Color.textSecondary)
                                             .padding(12)
                                             .frame(maxWidth: .infinity, alignment: .leading)
-                                            .background(Color.white)
-                                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.cardBorder, lineWidth: 1))
                                     }
+                                    .background(Color.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.cardBorder, lineWidth: 1))
 
-                                    // Context note
                                     HStack(alignment: .top, spacing: 6) {
                                         Image(systemName: "info.circle")
                                             .font(.system(size: 11))
@@ -232,7 +150,7 @@ private struct DetailPage: View {
                                 .foregroundStyle(Color.textTertiary)
 
                             Button {
-                                UIPasteboard.general.string = item.prompt
+                                copyToClipboard(item.prompt)
                                 withAnimation { copiedPrompt = true }
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.44) {
                                     withAnimation { copiedPrompt = false }
@@ -288,7 +206,7 @@ private struct DetailPage: View {
                                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.cardBorder, lineWidth: 1))
 
                                 Button {
-                                    UIPasteboard.general.string = item.swiftui
+                                    copyToClipboard(item.swiftui)
                                     withAnimation { copiedCode = true }
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.44) {
                                         withAnimation { copiedCode = false }
@@ -309,13 +227,17 @@ private struct DetailPage: View {
                         }
                     }
                 }
-                .padding(.horizontal, 18)
-                .padding(.top, 24)
-                .padding(.bottom, 80)
+                .padding(.horizontal, 22)
+                .padding(.top, 26)
+                .padding(.bottom, 60)
             }
         }
         .background(Color.appBg)
-        .ignoresSafeArea(edges: .top)
+    }
+
+    private func copyToClipboard(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 }
 
@@ -349,7 +271,7 @@ private struct AppExampleTile: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(width: 72, alignment: .top)
             }
-            .frame(width: 76, height: 98, alignment: .top)  // ← fixed height, top-aligned
+            .frame(width: 76, height: 98, alignment: .top)
         }
         .buttonStyle(.plain)
         .scaleEffect(isSelected ? 0.97 : 1.0)
@@ -431,7 +353,7 @@ private struct MiniButton: View {
     }
 }
 
-// Pin — shake left/right + red
+// Pin — shake + red error
 private struct MiniPin: View {
     @State private var trigger = false
     @State private var err = false
@@ -482,7 +404,7 @@ private struct MiniWaveform: View {
     }
 }
 
-// Pull to refresh — arrow + list pull
+// Pull to refresh
 private struct MiniPullRefresh: View {
     @State private var pulling = false
     var body: some View {
@@ -544,9 +466,13 @@ private struct MiniList: View {
                 .animation(.spring(response: 0.35, dampingFraction: 0.72).delay(Double(i) * 0.07), value: appeared)
             }
         }
-        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.76, repeats: true) { _ in
-            appeared = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { appeared = true }
-        }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) { appeared = true }}
+        .onAppear {
+            Timer.scheduledTimer(withTimeInterval: 1.76, repeats: true) { _ in
+                appeared = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { appeared = true }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) { appeared = true }
+        }
     }
 }
 
@@ -567,9 +493,13 @@ private struct MiniBadge: View {
             }
         }
         .animation(.spring(bounce: 0.5), value: show)
-        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.28, repeats: true) { _ in
-            show = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) { show = true }
-        }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { show = true }}
+        .onAppear {
+            Timer.scheduledTimer(withTimeInterval: 1.28, repeats: true) { _ in
+                show = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) { show = true }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { show = true }
+        }
     }
 }
 
@@ -590,7 +520,7 @@ private struct MiniSpinner: View {
     }
 }
 
-// Progress — fill animation
+// Progress — fill
 private struct MiniProgress: View {
     @State private var progress: CGFloat = 0
     var body: some View {
@@ -599,9 +529,13 @@ private struct MiniProgress: View {
             RoundedRectangle(cornerRadius: 3).fill(mc.opacity(0.32)).frame(width: 40 * progress, height: 5)
         }
         .animation(.easeInOut(duration: 1.2), value: progress)
-        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.44, repeats: true) { _ in
-            progress = 0; DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { progress = 1.0 }
-        }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { progress = 1.0 }}
+        .onAppear {
+            Timer.scheduledTimer(withTimeInterval: 1.44, repeats: true) { _ in
+                progress = 0
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { progress = 1.0 }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { progress = 1.0 }
+        }
     }
 }
 
@@ -621,7 +555,7 @@ private struct MiniTransition: View {
     }
 }
 
-// Chat — bubbles appearing
+// Chat bubbles
 private struct MiniChat: View {
     @State private var step = 0
     var body: some View {
@@ -639,12 +573,15 @@ private struct MiniChat: View {
             .opacity(step >= 2 ? 1 : 0).offset(x: step >= 2 ? 0 : 10)
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.75), value: step)
-        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.92, repeats: true) { _ in
-            step = 0
+        .onAppear {
+            Timer.scheduledTimer(withTimeInterval: 1.92, repeats: true) { _ in
+                step = 0
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { step = 1 }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) { step = 2 }
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { step = 1 }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) { step = 2 }
-        }; DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { step = 1 }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) { step = 2 }}
+        }
     }
 }
 
