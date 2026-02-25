@@ -33,7 +33,7 @@ struct DetailPanelView: View {
                                 AnimationDemoView(id: item.id)
                             }
                         }
-                        .frame(height: hasSliders ? 230 : 320)
+                        .frame(height: hasSliders ? 276 : 384)
 
                         Text(item.situationCategory)
                             .font(.system(size: 10, weight: .semibold))
@@ -96,7 +96,7 @@ struct DetailPanelView: View {
 
                 // ── 실시간 프롬프트 ────────────────────────────────────
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("실시간 프롬프트")
+                    Text("실시간 AI 프롬프트")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(Color.textTertiary)
                         .kerning(0.8)
@@ -191,7 +191,7 @@ struct DetailPanelView: View {
 
                     if !infoOnly.isEmpty {
                         ContentSection(title: "세부조절 옵션") {
-                            VStack(spacing: 8) {
+                            VStack(spacing: 0) {
                                 ForEach(infoOnly, id: \.key) { PropRow(prop: $0) }
                             }
                         }
@@ -938,10 +938,7 @@ private struct PropRow: View {
                 .foregroundStyle(Color.textTertiary)
                 .lineSpacing(3)
         }
-        .padding(11)
+        .padding(.vertical, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.cardBorder, lineWidth: 1))
     }
 }
