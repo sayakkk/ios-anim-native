@@ -900,34 +900,26 @@ private struct LiveSlideDemo: View {
     // 방향에 따라 패널 크기 결정
     private var isVertical: Bool { Int(slideEdge) == 0 || Int(slideEdge) == 1 }
 
-    private let W: CGFloat = 160
-    private let H: CGFloat = 210
+    private let W: CGFloat = 88
+    private let H: CGFloat = 118
 
     var body: some View {
         ZStack(alignment: edgeAlignment) {
             // 화면 틀
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(liveInkLight, lineWidth: 1.5)
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(liveInk.opacity(0.25), lineWidth: 1.5)
                 .frame(width: W, height: H)
-            // 배경 콘텐츠 라인
-            VStack(spacing: 7) {
-                ForEach(0..<4, id: \.self) { i in
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(liveInkLight)
-                        .frame(width: CGFloat(80 - i * 10), height: 4)
-                }
-            }
             // 슬라이드 패널
             if shown {
-                RoundedRectangle(cornerRadius: isVertical ? 10 : 0)
-                    .fill(liveInk.opacity(0.13))
+                RoundedRectangle(cornerRadius: isVertical ? 6 : 0)
+                    .fill(liveInk.opacity(0.15))
                     .overlay(
-                        RoundedRectangle(cornerRadius: isVertical ? 10 : 0)
-                            .stroke(liveInk.opacity(0.22), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: isVertical ? 6 : 0)
+                            .stroke(liveInk.opacity(0.28), lineWidth: 1)
                     )
                     .frame(
-                        width:  isVertical ? W - 2   : W * 0.52,
-                        height: isVertical ? H * 0.46 : H - 2
+                        width:  isVertical ? W - 2    : W * 0.52,
+                        height: isVertical ? H * 0.45 : H - 2
                     )
                     .transition(slideTransition)
             }
