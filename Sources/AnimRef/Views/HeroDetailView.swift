@@ -33,7 +33,7 @@ struct DetailPanelView: View {
                                 AnimationDemoView(id: item.id)
                             }
                         }
-                        .frame(height: hasSliders ? 276 : 384)
+                        .frame(height: hasSliders ? 345 : 480)
 
                         Text(item.situationCategory)
                             .font(.system(size: 10, weight: .semibold))
@@ -47,8 +47,7 @@ struct DetailPanelView: View {
 
                     // Slider rows
                     if hasSliders {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Divider().overlay(Color.divider)
+                        VStack(alignment: .leading, spacing: 20) {
                             ForEach(sliders, id: \.key) { prop in
                                 SliderRow(
                                     prop: prop,
@@ -61,57 +60,53 @@ struct DetailPanelView: View {
                             }
                         }
                         .padding(.horizontal, 14)
-                        .padding(.top, 12)
-                        .padding(.bottom, 14)
+                        .padding(.top, 20)
+                        .padding(.bottom, 18)
                         .background(Color.white)
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 18))
                 .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.cardBorder, lineWidth: 1))
                 .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
-                // Copy icon — top-right
-                .overlay(alignment: .topTrailing) {
-                    Button {
-                        copyToClipboard(buildDynamicPrompt())
-                        withAnimation { copiedPrompt = true }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            withAnimation { copiedPrompt = false }
-                        }
-                    } label: {
-                        Image(systemName: copiedPrompt ? "checkmark" : "doc.on.doc")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(copiedPrompt ? .white : Color.textSecondary)
-                            .frame(width: 30, height: 30)
-                            .background(copiedPrompt ? Color.textPrimary : Color.white.opacity(0.88))
-                            .clipShape(Circle())
-                            .shadow(color: .black.opacity(0.08), radius: 4, y: 1)
-                    }
-                    .buttonStyle(.plain)
-                    .scaleEffect(copiedPrompt ? 0.92 : 1.0)
-                    .animation(.spring(response: 0.25, dampingFraction: 0.65), value: copiedPrompt)
-                    .padding(10)
-                }
                 .padding(.horizontal, 22)
                 .padding(.top, 18)
 
-                // ── 실시간 프롬프트 ────────────────────────────────────
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("실시간 AI 프롬프트")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(Color.textTertiary)
-                        .kerning(0.8)
-                        .textCase(.uppercase)
-                    Text(buildDynamicPrompt())
-                        .font(.system(size: 12))
-                        .italic()
-                        .foregroundStyle(Color.textSecondary)
-                        .lineSpacing(4)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                // ── 실시간 AI 프롬프트 (클릭하면 복사) ──────────────
+                Button {
+                    copyToClipboard(buildDynamicPrompt())
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.65)) { copiedPrompt = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        withAnimation { copiedPrompt = false }
+                    }
+                } label: {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("실시간 AI 프롬프트")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(Color.textTertiary)
+                                .kerning(0.8)
+                                .textCase(.uppercase)
+                            Spacer()
+                            Image(systemName: copiedPrompt ? "checkmark" : "doc.on.doc")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(copiedPrompt ? Color.textPrimary : Color.textTertiary)
+                                .scaleEffect(copiedPrompt ? 0.9 : 1.0)
+                                .animation(.spring(response: 0.25, dampingFraction: 0.65), value: copiedPrompt)
+                        }
+                        Text(buildDynamicPrompt())
+                            .font(.system(size: 12))
+                            .italic()
+                            .foregroundStyle(Color.textSecondary)
+                            .lineSpacing(4)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(12)
+                    .background(copiedPrompt ? Color.textPrimary.opacity(0.04) : Color.white.opacity(0.7))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(
+                        copiedPrompt ? Color.textPrimary.opacity(0.25) : Color.cardBorder, lineWidth: 1))
                 }
-                .padding(12)
-                .background(Color.white.opacity(0.7))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.cardBorder, lineWidth: 1))
+                .buttonStyle(.plain)
                 .padding(.horizontal, 22)
                 .padding(.top, 10)
 
