@@ -39,7 +39,7 @@ struct ContentView: View {
             }
         }
         .preferredColorScheme(.light)
-        .toolbarBackground(Color.appBg, for: .windowToolbar)
+        .toolbar(.hidden, for: .windowToolbar)
     }
 }
 
