@@ -18,7 +18,7 @@ struct DetailPanelView: View {
                 // ── Animation demo card ───────────────────────────────
                 ZStack(alignment: .bottomLeading) {
                     AnimationDemoView(id: item.id)
-                        .frame(height: 320)
+                        .frame(height: 300)
 
                     Text(item.situationCategory)
                         .font(.system(size: 10, weight: .semibold))
@@ -29,11 +29,10 @@ struct DetailPanelView: View {
                         .padding(14)
                 }
                 .background(Color(red: 0.97, green: 0.97, blue: 0.96))
-                .clipShape(.rect(
-                    topLeadingRadius: 0, bottomLeadingRadius: 22,
-                    bottomTrailingRadius: 22, topTrailingRadius: 0
-                ))
-                .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 6)
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                .padding(.horizontal, 22)
+                .padding(.top, 18)
 
                 // ── Title block ───────────────────────────────────────
                 VStack(alignment: .leading, spacing: 6) {
