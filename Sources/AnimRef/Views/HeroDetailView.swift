@@ -18,7 +18,7 @@ struct DetailPanelView: View {
                 // ── Animation demo card ───────────────────────────────
                 ZStack(alignment: .bottomLeading) {
                     AnimationDemoView(id: item.id)
-                        .frame(height: 300)
+                        .frame(height: 345)
 
                     Text(item.situationCategory)
                         .font(.system(size: 10, weight: .semibold))
