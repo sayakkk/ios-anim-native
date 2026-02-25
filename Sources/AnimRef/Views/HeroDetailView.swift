@@ -776,25 +776,32 @@ private struct LiveStaggerDemo: View {
     let delayInterval: Double
     var startOffset: Double = 16
     @State private var appeared = false
+
     var body: some View {
         HStack(spacing: 10) {
             ForEach(0..<4, id: \.self) { i in
                 liveCircle(22)
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : startOffset)
+                    // 등장할 때만 딜레이 스프링, 숨길 때는 즉시 리셋
                     .animation(
-                        .spring(response: 0.38, dampingFraction: 0.70)
-                            .delay(Double(i) * delayInterval),
+                        appeared
+                            ? .spring(response: 0.38, dampingFraction: 0.70).delay(Double(i) * delayInterval)
+                            : .none,
                         value: appeared
                     )
             }
         }
         .onAppear {
-            let cycle = Double(4) * delayInterval + 1.0
+            let cycle = Double(4) * delayInterval + 1.4
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { appeared = true }
             Timer.scheduledTimer(withTimeInterval: cycle, repeats: true) { _ in
-                appeared = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { appeared = true }
+                // 즉시 숨기고 (.none 애니메이션)
+                var t = Transaction(animation: .none)
+                t.disablesAnimations = true
+                withTransaction(t) { appeared = false }
+                // 짧은 pause 후 다시 등장
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { appeared = true }
             }
         }
     }
