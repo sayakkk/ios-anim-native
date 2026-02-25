@@ -652,7 +652,7 @@ private struct LiveEaseDemo: View {
 
     var body: some View {
         GeometryReader { geo in
-            let travel = geo.size.width * 0.38
+            let travel = geo.size.width * 0.19
             ZStack {
                 Capsule()
                     .fill(liveInkLight)
