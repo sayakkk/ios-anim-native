@@ -900,41 +900,39 @@ private struct LiveSlideDemo: View {
     // 방향에 따라 패널 크기 결정
     private var isVertical: Bool { Int(slideEdge) == 0 || Int(slideEdge) == 1 }
 
+    private let W: CGFloat = 160
+    private let H: CGFloat = 210
+
     var body: some View {
-        GeometryReader { geo in
-            let w = geo.size.width * 0.62
-            let h = geo.size.height * 0.72
-            ZStack(alignment: edgeAlignment) {
-                // 배경 화면 틀
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(liveInkLight, lineWidth: 1.5)
-                    .frame(width: w, height: h)
-                // 배경 콘텐츠 라인
-                VStack(spacing: 8) {
-                    ForEach(0..<4, id: \.self) { i in
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(liveInkLight)
-                            .frame(width: w * 0.55 - CGFloat(i) * 10, height: 5)
-                    }
-                }
-                // 슬라이드 패널
-                if shown {
-                    RoundedRectangle(cornerRadius: isVertical ? 10 : 0)
-                        .fill(liveInk.opacity(0.13))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: isVertical ? 10 : 0)
-                                .stroke(liveInk.opacity(0.22), lineWidth: 1)
-                        )
-                        .frame(
-                            width:  isVertical ? w - 2    : w * 0.52,
-                            height: isVertical ? h * 0.46 : h - 2
-                        )
-                        .transition(slideTransition)
+        ZStack(alignment: edgeAlignment) {
+            // 화면 틀
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(liveInkLight, lineWidth: 1.5)
+                .frame(width: W, height: H)
+            // 배경 콘텐츠 라인
+            VStack(spacing: 7) {
+                ForEach(0..<4, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(liveInkLight)
+                        .frame(width: CGFloat(80 - i * 10), height: 4)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipped()
+            // 슬라이드 패널
+            if shown {
+                RoundedRectangle(cornerRadius: isVertical ? 10 : 0)
+                    .fill(liveInk.opacity(0.13))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: isVertical ? 10 : 0)
+                            .stroke(liveInk.opacity(0.22), lineWidth: 1)
+                    )
+                    .frame(
+                        width:  isVertical ? W - 2   : W * 0.52,
+                        height: isVertical ? H * 0.46 : H - 2
+                    )
+                    .transition(slideTransition)
+            }
         }
+        .clipped()
         .animation(.spring(response: 0.4, dampingFraction: 0.78), value: shown)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { shown = true }
