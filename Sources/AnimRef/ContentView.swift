@@ -32,7 +32,7 @@ struct ContentView: View {
             if let item = selectedItem {
                 DetailPanelView(item: item)
                     .id(item.id)                       // re-render on card switch
-                    .navigationTitle(item.name)
+                    .navigationTitle("")
             } else {
                 EmptyDetailPlaceholder()
                     .navigationTitle("")

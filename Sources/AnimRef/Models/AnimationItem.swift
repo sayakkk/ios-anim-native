@@ -274,7 +274,7 @@ if showSheet {
         )
 }
 """,
-            prompt: "SwiftUI [바텀시트/패널/뷰]가 {slideEdge}에서 slide로 나타나게 해줘."
+            prompt: "SwiftUI [바텀시트/패널/뷰]가 {slideEdge}에서 slide로 나타나게 해줘. opacity 조합: {withOpacity}."
         ),
 
         AnimationItem(
@@ -558,7 +558,8 @@ Circle()
                 ),
                 AnimProperty(
                     label: "시작 위치", key: ".offset(y:)",
-                    desc: "15~25pt 아래에서 올라오는 게 자연스러움"
+                    desc: "아래에서 올라오는 거리. 클수록 더 멀리서 등장",
+                    paramKey: "startOffset", minValue: 5, maxValue: 40, defaultValue: 16, step: 1, format: "%.0f"
                 ),
             ],
             swiftui: """
@@ -573,7 +574,7 @@ ForEach(Array(items.enumerated()), id: \\.offset) { index, item in
         )
 }
 """,
-            prompt: "SwiftUI ForEach 리스트 아이템이 [0.06]초 간격으로 아래에서 순차적으로 나타나게 해줘."
+            prompt: "SwiftUI ForEach 리스트 아이템이 [0.06]초 간격으로 [16]pt 아래에서 순차적으로 나타나게 해줘."
         ),
 
         AnimationItem(
@@ -604,7 +605,8 @@ ForEach(Array(items.enumerated()), id: \\.offset) { index, item in
                 ),
                 AnimProperty(
                     label: "높낮이", key: "height range:",
-                    desc: "차이가 클수록 파도가 극적으로 보임"
+                    desc: "막대 최대 높이. 클수록 파도가 극적으로 보임",
+                    paramKey: "maxHeight", minValue: 10, maxValue: 48, defaultValue: 34, step: 1, format: "%.0f"
                 ),
             ],
             swiftui: """
@@ -624,7 +626,7 @@ HStack(spacing: 4) {
 }
 .onAppear { isAnimating = true }
 """,
-            prompt: "SwiftUI에서 파도처럼 위아래로 움직이는 wave 이퀄라이저 애니메이션을 만들어줘. delay [0.1]초 간격."
+            prompt: "SwiftUI에서 파도처럼 위아래로 움직이는 wave 이퀄라이저 애니메이션을 만들어줘. delay [0.1]초 간격, 최대 높이 [34]pt."
         ),
 
         AnimationItem(

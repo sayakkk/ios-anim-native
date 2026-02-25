@@ -560,9 +560,15 @@ struct InteractiveDemoView: View {
                         cycleDuration: values["cycleDuration"] ?? 1.2
                     )
                 case "stagger":
-                    LiveStaggerDemo(delayInterval: values["delayInterval"] ?? 0.06)
+                    LiveStaggerDemo(
+                        delayInterval: values["delayInterval"] ?? 0.06,
+                        startOffset: values["startOffset"] ?? 16
+                    )
                 case "wave":
-                    LiveWaveDemo(delayInterval: values["delayInterval"] ?? 0.1)
+                    LiveWaveDemo(
+                        delayInterval: values["delayInterval"] ?? 0.1,
+                        maxHeight: values["maxHeight"] ?? 34
+                    )
                 case "pop-in":
                     LivePopInDemo(
                         startScale: values["startScale"] ?? 0.1,
@@ -755,13 +761,14 @@ private struct LivePulseDemo: View {
 
 private struct LiveStaggerDemo: View {
     let delayInterval: Double
+    var startOffset: Double = 16
     @State private var appeared = false
     var body: some View {
         HStack(spacing: 10) {
             ForEach(0..<4, id: \.self) { i in
                 liveCircle(22)
                     .opacity(appeared ? 1 : 0)
-                    .offset(y: appeared ? 0 : 16)
+                    .offset(y: appeared ? 0 : startOffset)
                     .animation(
                         .spring(response: 0.38, dampingFraction: 0.70)
                             .delay(Double(i) * delayInterval),
@@ -782,13 +789,14 @@ private struct LiveStaggerDemo: View {
 
 private struct LiveWaveDemo: View {
     let delayInterval: Double
+    var maxHeight: Double = 34
     @State private var animating = false
     var body: some View {
         HStack(spacing: 6) {
             ForEach(0..<5, id: \.self) { i in
                 RoundedRectangle(cornerRadius: 2)
                     .stroke(liveInk, lineWidth: liveSW)
-                    .frame(width: 6, height: animating ? 34 : 8)
+                    .frame(width: 6, height: animating ? maxHeight : 8)
                     .animation(
                         .easeInOut(duration: 0.44)
                             .repeatForever(autoreverses: true)
