@@ -13,39 +13,104 @@ struct DetailPanelView: View {
     @State private var propertyValues: [String: Double] = [:]
     @State private var previewTrigger   = UUID()
 
+    private var sliders:  [AnimProperty] { item.properties.filter(\.isSlider) }
+    private var infoOnly: [AnimProperty] { item.properties.filter { !$0.isSlider } }
+    private var hasSliders: Bool { !sliders.isEmpty }
+
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
 
-                // ── Animation demo card ───────────────────────────────
-                ZStack(alignment: .bottomLeading) {
-                    AnimationDemoView(id: item.id)
-                        .frame(height: 345)
+                // ── TOP CARD: interactive demo + sliders ──────────────
+                VStack(spacing: 0) {
+                    ZStack(alignment: .bottomLeading) {
+                        Group {
+                            if hasSliders {
+                                InteractiveDemoView(id: item.id, values: propertyValues)
+                                    .id(previewTrigger)
+                            } else {
+                                AnimationDemoView(id: item.id)
+                            }
+                        }
+                        .frame(height: hasSliders ? 240 : 320)
 
-                    Text(item.situationCategory)
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Color.textSecondary)
-                        .padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(Color.white.opacity(0.88))
-                        .clipShape(Capsule())
+                        Text(item.situationCategory)
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Color.textSecondary)
+                            .padding(.horizontal, 10).padding(.vertical, 4)
+                            .background(Color.white.opacity(0.88))
+                            .clipShape(Capsule())
+                            .padding(14)
+                    }
+                    .background(Color(red: 0.97, green: 0.97, blue: 0.96))
+
+                    if hasSliders {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Divider().overlay(Color.divider)
+                            ForEach(sliders, id: \.key) { prop in
+                                SliderRow(
+                                    prop: prop,
+                                    value: Binding(
+                                        get: { propertyValues[prop.paramKey ?? ""] ?? prop.defaultValue ?? 0.5 },
+                                        set: { propertyValues[prop.paramKey ?? ""] = $0 }
+                                    ),
+                                    onEditEnd: { previewTrigger = UUID() }
+                                )
+                            }
+                        }
                         .padding(14)
+                        .background(Color.white)
+                    }
                 }
-                .background(Color(red: 0.97, green: 0.97, blue: 0.96))
                 .clipShape(RoundedRectangle(cornerRadius: 18))
+                .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.cardBorder, lineWidth: 1))
                 .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                .overlay(alignment: .topTrailing) {
+                    Button {
+                        copyToClipboard(buildDynamicPrompt())
+                        withAnimation { copiedPrompt = true }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            withAnimation { copiedPrompt = false }
+                        }
+                    } label: {
+                        Image(systemName: copiedPrompt ? "checkmark" : "doc.on.doc")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(copiedPrompt ? .white : Color.textSecondary)
+                            .frame(width: 30, height: 30)
+                            .background(copiedPrompt ? Color.textPrimary : Color.white.opacity(0.88))
+                            .clipShape(Circle())
+                            .shadow(color: .black.opacity(0.08), radius: 4, y: 1)
+                    }
+                    .buttonStyle(.plain)
+                    .scaleEffect(copiedPrompt ? 0.92 : 1.0)
+                    .animation(.spring(response: 0.25, dampingFraction: 0.65), value: copiedPrompt)
+                    .padding(10)
+                }
                 .padding(.horizontal, 22)
                 .padding(.top, 18)
+
+                // ── AI Prompt — right below demo ──────────────────────
+                Text(buildDynamicPrompt())
+                    .font(.system(size: 12))
+                    .italic()
+                    .foregroundStyle(Color.textSecondary)
+                    .lineSpacing(4)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.white.opacity(0.7))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.cardBorder, lineWidth: 1))
+                    .padding(.horizontal, 22)
+                    .padding(.top, 10)
 
                 // ── Title block ───────────────────────────────────────
                 VStack(alignment: .leading, spacing: 6) {
                     Text(item.name)
-                        .font(.system(size: 30, weight: .black))
+                        .font(.system(size: 28, weight: .black))
                         .foregroundStyle(Color.textPrimary)
-
                     Text(item.feel)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.textSecondary)
-
                     Text(item.feelDesc)
                         .font(.system(size: 13))
                         .foregroundStyle(Color.textTertiary)
@@ -53,17 +118,15 @@ struct DetailPanelView: View {
                         .padding(.top, 2)
                 }
                 .padding(.horizontal, 22)
-                .padding(.top, 24)
+                .padding(.top, 22)
                 .padding(.bottom, 8)
 
-                Divider()
-                    .overlay(Color.divider)
+                Divider().overlay(Color.divider)
                     .padding(.horizontal, 22)
-                    .padding(.top, 14)
-                    .padding(.bottom, 2)
+                    .padding(.top, 12).padding(.bottom, 2)
 
                 // ── Content sections ──────────────────────────────────
-                VStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: 26) {
 
                     ContentSection(title: "언제 써요?") {
                         Text(item.when)
@@ -89,34 +152,24 @@ struct DetailPanelView: View {
                                 }
                                 .padding(.vertical, 2)
                             }
-
                             if let ex = selectedExample {
                                 VStack(alignment: .leading, spacing: 10) {
                                     Text("[\(ex.name)] 실제로 쓰이는 값")
                                         .font(.system(size: 10, weight: .bold))
                                         .foregroundStyle(Color.textTertiary)
-                                        .textCase(.uppercase)
-                                        .kerning(0.8)
-
+                                        .textCase(.uppercase).kerning(0.8)
                                     ScrollView(.horizontal, showsIndicators: false) {
                                         Text(ex.code)
                                             .font(.system(size: 12, design: .monospaced))
                                             .foregroundStyle(Color.textSecondary)
-                                            .padding(12)
-                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(12).frame(maxWidth: .infinity, alignment: .leading)
                                     }
                                     .background(Color.white)
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
                                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.cardBorder, lineWidth: 1))
-
                                     HStack(alignment: .top, spacing: 6) {
-                                        Image(systemName: "info.circle")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(Color.textTertiary)
-                                        Text(ex.note)
-                                            .font(.system(size: 12))
-                                            .foregroundStyle(Color.textSecondary)
-                                            .lineSpacing(3)
+                                        Image(systemName: "info.circle").font(.system(size: 11)).foregroundStyle(Color.textTertiary)
+                                        Text(ex.note).font(.system(size: 12)).foregroundStyle(Color.textSecondary).lineSpacing(3)
                                     }
                                 }
                                 .transition(.move(edge: .top).combined(with: .opacity))
@@ -124,149 +177,15 @@ struct DetailPanelView: View {
                         }
                     }
 
-                    // ── Interactive property section ──────────────────
-                    if !item.properties.isEmpty {
-                        let sliders = item.properties.filter(\.isSlider)
-                        let infoOnly = item.properties.filter { !$0.isSlider }
-
+                    if !infoOnly.isEmpty {
                         ContentSection(title: "세부조절 옵션") {
-                            VStack(alignment: .leading, spacing: 14) {
-
-                                // Mini live preview (shown only when there are sliders)
-                                if !sliders.isEmpty {
-                                    InteractiveDemoView(id: item.id, values: propertyValues)
-                                        .frame(height: 160)
-                                        .background(Color(red: 0.97, green: 0.97, blue: 0.96))
-                                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                                        .id(previewTrigger)
-
-                                    Divider().overlay(Color.divider)
-                                }
-
-                                // Sliders
-                                ForEach(sliders, id: \.key) { prop in
-                                    if let key = prop.paramKey,
-                                       let min = prop.minValue,
-                                       let max = prop.maxValue,
-                                       let def = prop.defaultValue {
-                                        VStack(alignment: .leading, spacing: 5) {
-                                            HStack(alignment: .center) {
-                                                Text(prop.label)
-                                                    .font(.system(size: 13, weight: .semibold))
-                                                    .foregroundStyle(Color.textPrimary)
-                                                Text(prop.key)
-                                                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                                                    .foregroundStyle(Color.textTertiary)
-                                                    .padding(.horizontal, 6).padding(.vertical, 2)
-                                                    .background(Color.appBg)
-                                                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                                                Spacer()
-                                                Text(String(format: prop.format, propertyValues[key] ?? def))
-                                                    .font(.system(size: 13, weight: .bold, design: .monospaced))
-                                                    .foregroundStyle(Color.textPrimary)
-                                                    .padding(.horizontal, 8).padding(.vertical, 3)
-                                                    .background(Color.white)
-                                                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                                                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.cardBorder, lineWidth: 1))
-                                            }
-                                            Slider(
-                                                value: Binding(
-                                                    get: { propertyValues[key] ?? def },
-                                                    set: { propertyValues[key] = $0 }
-                                                ),
-                                                in: min...max,
-                                                step: prop.step ?? 0.01
-                                            ) {
-                                                EmptyView()
-                                            } minimumValueLabel: {
-                                                Text(String(format: prop.format, min))
-                                                    .font(.system(size: 9))
-                                                    .foregroundStyle(Color.textTertiary)
-                                            } maximumValueLabel: {
-                                                Text(String(format: prop.format, max))
-                                                    .font(.system(size: 9))
-                                                    .foregroundStyle(Color.textTertiary)
-                                            } onEditingChanged: { editing in
-                                                if !editing { previewTrigger = UUID() }
-                                            }
-                                            .tint(Color.chipActive)
-
-                                            Text(prop.desc)
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(Color.textTertiary)
-                                                .lineSpacing(2)
-                                        }
-                                    }
-                                }
-
-                                // Info-only rows (no slider)
-                                if !infoOnly.isEmpty {
-                                    if !sliders.isEmpty {
-                                        Divider().overlay(Color.divider).padding(.vertical, 2)
-                                    }
-                                    VStack(spacing: 8) {
-                                        ForEach(infoOnly, id: \.key) { prop in
-                                            PropRow(prop: prop)
-                                        }
-                                    }
-                                }
-                            }
-                            .padding(14)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.cardBorder, lineWidth: 1))
+                            VStack(spacing: 8) { ForEach(infoOnly, id: \.key) { PropRow(prop: $0) } }
                         }
                     }
 
-                    // ── AI Prompt ─────────────────────────────────────
-                    ContentSection(title: "AI 프롬프트") {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(buildDynamicPrompt())
-                                .font(.system(size: 13))
-                                .italic()
-                                .foregroundStyle(Color.textSecondary)
-                                .lineSpacing(5)
-
-                            let hasSliders = item.properties.contains(where: \.isSlider)
-                            Text(hasSliders
-                                 ? "슬라이더로 조정한 값이 자동으로 반영됩니다"
-                                 : "[ ] 부분을 원하는 내용으로 바꿔서 AI에 붙여넣으세요")
-                                .font(.system(size: 11))
-                                .foregroundStyle(Color.textTertiary)
-
-                            Button {
-                                copyToClipboard(buildDynamicPrompt())
-                                withAnimation { copiedPrompt = true }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.44) {
-                                    withAnimation { copiedPrompt = false }
-                                }
-                            } label: {
-                                Label(copiedPrompt ? "복사됨 ✓" : "프롬프트 복사",
-                                      systemImage: copiedPrompt ? "checkmark" : "doc.on.doc")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(copiedPrompt ? .white : Color.textPrimary)
-                                    .padding(.horizontal, 16).padding(.vertical, 9)
-                                    .background(copiedPrompt ? Color.textPrimary : Color.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    .overlay(RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color.cardBorder, lineWidth: 1))
-                            }
-                            .buttonStyle(.plain)
-                            .scaleEffect(copiedPrompt ? 0.96 : 1.0)
-                            .animation(.spring(response: 0.25, dampingFraction: 0.65), value: copiedPrompt)
-                        }
-                        .padding(14)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.cardBorder, lineWidth: 1))
-                    }
-
-                    // ── SwiftUI code toggle ───────────────────────────
                     VStack(alignment: .leading, spacing: 10) {
                         Button {
-                            withAnimation(.spring(response: 0.28, dampingFraction: 0.80)) {
-                                showCode.toggle()
-                            }
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.80)) { showCode.toggle() }
                         } label: {
                             HStack(spacing: 5) {
                                 Image(systemName: showCode ? "chevron.down" : "chevron.right")
@@ -283,19 +202,15 @@ struct DetailPanelView: View {
                                 ScrollView(.horizontal, showsIndicators: false) {
                                     Text(item.swiftui)
                                         .font(.system(size: 12, design: .monospaced))
-                                        .foregroundStyle(Color.textSecondary)
-                                        .padding(14)
+                                        .foregroundStyle(Color.textSecondary).padding(14)
                                 }
                                 .background(Color.white)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.cardBorder, lineWidth: 1))
-
                                 Button {
                                     copyToClipboard(item.swiftui)
                                     withAnimation { copiedCode = true }
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.44) {
-                                        withAnimation { copiedCode = false }
-                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.44) { withAnimation { copiedCode = false } }
                                 } label: {
                                     Label(copiedCode ? "복사됨 ✓" : "코드 복사",
                                           systemImage: copiedCode ? "checkmark" : "doc.on.doc")
@@ -313,7 +228,7 @@ struct DetailPanelView: View {
                     }
                 }
                 .padding(.horizontal, 22)
-                .padding(.top, 26)
+                .padding(.top, 24)
                 .padding(.bottom, 60)
             }
         }
@@ -326,32 +241,21 @@ struct DetailPanelView: View {
     private func initPropertyValues() {
         var values: [String: Double] = [:]
         for prop in item.properties {
-            if let key = prop.paramKey, let def = prop.defaultValue {
-                values[key] = def
-            }
+            if let key = prop.paramKey, let def = prop.defaultValue { values[key] = def }
         }
         propertyValues = values
     }
 
     private func buildDynamicPrompt() -> String {
-        let sliders = item.properties.filter(\.isSlider)
-        guard !sliders.isEmpty else { return item.prompt }
-        let valueStr = sliders.compactMap { prop -> String? in
-            guard let key = prop.paramKey, let val = propertyValues[key] else { return nil }
-            return "\(key) \(String(format: prop.format, val))"
-        }.joined(separator: ", ")
-        // Replace bracketed placeholders with actual values
+        guard hasSliders else { return item.prompt }
         var result = item.prompt
+        // Replace [number] placeholders one-by-one in slider order (first match only each time)
         for prop in sliders {
             guard let key = prop.paramKey, let val = propertyValues[key] else { continue }
             let formatted = String(format: prop.format, val)
-            // Replace patterns like [0.4] or [12] with current value
-            result = result.replacingOccurrences(
-                of: "\\[[0-9.]+\\]",
-                with: formatted,
-                options: .regularExpression,
-                range: result.range(of: result)
-            )
+            if let range = result.range(of: "\\[[0-9.]+\\]", options: .regularExpression) {
+                result.replaceSubrange(range, with: formatted)
+            }
         }
         return result
     }
@@ -359,6 +263,58 @@ struct DetailPanelView: View {
     private func copyToClipboard(_ text: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
+    }
+}
+
+// MARK: - Slider row
+
+private struct SliderRow: View {
+    let prop: AnimProperty
+    @Binding var value: Double
+    var onEditEnd: () -> Void = {}
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(alignment: .center) {
+                Text(prop.label)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.textPrimary)
+                Text(prop.key)
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Color.textTertiary)
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(Color.appBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                Spacer()
+                Text(String(format: prop.format, value))
+                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Color.textPrimary)
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .background(Color.appBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .frame(minWidth: 44, alignment: .center)
+            }
+            Slider(
+                value: $value,
+                in: (prop.minValue ?? 0)...(prop.maxValue ?? 1),
+                step: prop.step ?? 0.01
+            ) {
+                EmptyView()
+            } minimumValueLabel: {
+                Text(String(format: prop.format, prop.minValue ?? 0))
+                    .font(.system(size: 9)).foregroundStyle(Color.textTertiary)
+            } maximumValueLabel: {
+                Text(String(format: prop.format, prop.maxValue ?? 1))
+                    .font(.system(size: 9)).foregroundStyle(Color.textTertiary)
+            } onEditingChanged: { editing in
+                if !editing { onEditEnd() }
+            }
+            .tint(Color.chipActive)
+            Text(prop.desc)
+                .font(.system(size: 11))
+                .foregroundStyle(Color.textTertiary)
+                .lineSpacing(2)
+        }
     }
 }
 
