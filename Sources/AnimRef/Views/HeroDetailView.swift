@@ -1003,6 +1003,7 @@ private struct MiniAnimScene: View {
         if s.contains("음성") || s.contains("siri") || s.contains("재생 바") || s.contains("spotify") { return .waveform }
         if s.contains("당겨") || s.contains("pull") { return .pullRefresh }
         if s.contains("시트") || s.contains("알림 센터") { return .bottomSheet }
+        if (s.contains("카카오") && s.contains("설정")) || s.contains("화면 전환") || s.contains("네비게이션") { return .transition }
         if s.contains("설정") || s.contains("리스트") || s.contains("목록") || s.contains("추천") { return .list }
         if s.contains("배지") || s.contains("뱃지") { return .badge }
         if s.contains("로딩") || s.contains("스피너") || s.contains("연결") || s.contains("페어링") { return .spinner }
