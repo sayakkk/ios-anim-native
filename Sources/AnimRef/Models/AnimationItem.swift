@@ -4,13 +4,23 @@ import SwiftUI
 
 enum AnimKind { case basic, combo }
 
+// MARK: - Prop Kind
+
+enum PropKind {
+    case info
+    case picker(key: String, options: [(label: String, value: Double)], defaultIndex: Int)
+    case toggle(key: String, defaultOn: Bool)
+    case preset(key: String, options: [(label: String, values: [String: Double])], defaultIndex: Int)
+}
+
 // MARK: - Data Model
 
 struct AnimProperty {
     let label: String
     let key: String
     let desc: String
-    // Slider support (nil = info-only, not adjustable)
+    var kind: PropKind = .info
+    // Slider fields (nil = not a slider)
     var paramKey: String? = nil
     var minValue: Double? = nil
     var maxValue: Double? = nil
@@ -20,6 +30,13 @@ struct AnimProperty {
 
     var isSlider: Bool {
         paramKey != nil && minValue != nil && maxValue != nil && defaultValue != nil
+    }
+    var isInteractive: Bool {
+        if isSlider { return true }
+        switch kind {
+        case .info: return false
+        default: return true
+        }
     }
 }
 
@@ -91,7 +108,12 @@ struct AnimationData {
                 ),
                 AnimProperty(
                     label: "빠른 설정", key: ".bouncy / .smooth / .snappy",
-                    desc: "iOS 17+. bouncy=통통, smooth=부드럽게, snappy=빠르게"
+                    desc: "탭하면 response/탄성 값이 같이 바뀜",
+                    kind: .preset(key: "__presetSpring", options: [
+                        (label: ".bouncy", values: ["response": 0.35, "dampingFraction": 0.52]),
+                        (label: ".smooth", values: ["response": 0.40, "dampingFraction": 0.92]),
+                        (label: ".snappy", values: ["response": 0.22, "dampingFraction": 0.87]),
+                    ], defaultIndex: -1)
                 ),
             ],
             swiftui: """
@@ -224,12 +246,19 @@ SomeView()
             ],
             properties: [
                 AnimProperty(
-                    label: "방향", key: ".move(edge: .bottom)",
-                    desc: "bottom이 가장 많이 쓰임"
+                    label: "방향", key: "move(edge:)",
+                    desc: "방향 선택. bottom이 바텀 시트, trailing이 화면 전환",
+                    kind: .picker(key: "slideEdge", options: [
+                        (label: "아래", value: 0),
+                        (label: "위",   value: 1),
+                        (label: "왼쪽", value: 2),
+                        (label: "오른쪽", value: 3),
+                    ], defaultIndex: 0)
                 ),
                 AnimProperty(
-                    label: "조합", key: ".combined(with: .opacity)",
-                    desc: "슬라이드만 쓰면 어색함. opacity 같이 써야 자연스러움"
+                    label: "opacity 조합", key: ".combined(with: .opacity)",
+                    desc: "켜면 슬라이드 + 페이드 동시. 끄면 슬라이드만",
+                    kind: .toggle(key: "withOpacity", defaultOn: true)
                 ),
             ],
             swiftui: """
@@ -245,7 +274,7 @@ if showSheet {
         )
 }
 """,
-            prompt: "SwiftUI [바텀시트/패널/뷰]가 [아래/위/왼쪽/오른쪽]에서 slide로 나타나게 해줘."
+            prompt: "SwiftUI [바텀시트/패널/뷰]가 {slideEdge}에서 slide로 나타나게 해줘."
         ),
 
         AnimationItem(
@@ -275,8 +304,13 @@ if showSheet {
                     paramKey: "duration", minValue: 0.1, maxValue: 2.0, defaultValue: 0.3, step: 0.05, format: "%.1f"
                 ),
                 AnimProperty(
-                    label: "방향", key: ".easeIn / .easeOut",
-                    desc: "easeIn=빠르게 나타남, easeOut=부드럽게 사라짐"
+                    label: "커브", key: ".easeIn / .easeInOut / .easeOut",
+                    desc: "easeIn=빠르게 시작, easeInOut=S자 곡선, easeOut=천천히 끝",
+                    kind: .picker(key: "easeKind", options: [
+                        (label: ".easeIn",    value: 0),
+                        (label: ".easeInOut", value: 1),
+                        (label: ".easeOut",   value: 2),
+                    ], defaultIndex: 1)
                 ),
             ],
             swiftui: """
@@ -284,7 +318,7 @@ if showSheet {
 .animation(.easeIn(duration: 0.2), value: state)
 .animation(.easeOut(duration: 0.25), value: state)
 """,
-            prompt: "SwiftUI [뷰]에 easeInOut 애니메이션을 적용해줘. [0.3]초로."
+            prompt: "SwiftUI [뷰]에 {easeKind} 애니메이션을 적용해줘. [0.3]초로."
         ),
 
         AnimationItem(
@@ -314,8 +348,9 @@ if showSheet {
                     paramKey: "duration", minValue: 0.3, maxValue: 3.0, defaultValue: 1.0, step: 0.1, format: "%.1f"
                 ),
                 AnimProperty(
-                    label: "무한 반복", key: ".repeatForever(autoreverses: false)",
-                    desc: "autoreverses: false = 같은 방향 계속 반복"
+                    label: "반전 반복", key: ".repeatForever",
+                    desc: "off = 같은 방향 계속 / on = 왔다갔다 반복",
+                    kind: .toggle(key: "autoreverses", defaultOn: false)
                 ),
             ],
             swiftui: """
@@ -332,7 +367,7 @@ Circle()
     )
     .onAppear { isRotating = true }
 """,
-            prompt: "SwiftUI [뷰]를 linear 애니메이션으로 [회전/이동]시켜줘. 무한 반복. duration [1.0]초."
+            prompt: "SwiftUI [뷰]를 linear 애니메이션으로 무한 회전시켜줘. autoreverses: {autoreverses}, duration [1.0]초."
         ),
 
         // ─── 조합 ────────────────────────────────────────────

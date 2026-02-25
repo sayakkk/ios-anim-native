@@ -13,9 +13,9 @@ struct DetailPanelView: View {
     @State private var propertyValues: [String: Double] = [:]
     @State private var previewTrigger   = UUID()
 
-    private var sliders:  [AnimProperty] { item.properties.filter(\.isSlider) }
-    private var infoOnly: [AnimProperty] { item.properties.filter { !$0.isSlider } }
-    private var hasSliders: Bool { !sliders.isEmpty }
+    private var interactive: [AnimProperty] { item.properties.filter(\.isInteractive) }
+    private var infoOnly:    [AnimProperty] { item.properties.filter { !$0.isInteractive } }
+    private var hasInteractive: Bool { !interactive.isEmpty }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -26,14 +26,14 @@ struct DetailPanelView: View {
                     // Cream preview
                     ZStack(alignment: .bottomLeading) {
                         Group {
-                            if hasSliders {
+                            if hasInteractive {
                                 InteractiveDemoView(id: item.id, values: propertyValues)
                                     .id(previewTrigger)
                             } else {
                                 AnimationDemoView(id: item.id)
                             }
                         }
-                        .frame(height: hasSliders ? 345 : 480)
+                        .frame(height: hasInteractive ? 345 : 480)
 
                         Text(item.situationCategory)
                             .font(.system(size: 10, weight: .semibold))
@@ -45,18 +45,56 @@ struct DetailPanelView: View {
                     }
                     .background(Color(red: 0.97, green: 0.97, blue: 0.96))
 
-                    // Slider rows
-                    if hasSliders {
+                    // Interactive rows (slider / picker / toggle / preset)
+                    if hasInteractive {
                         VStack(alignment: .leading, spacing: 20) {
-                            ForEach(sliders, id: \.key) { prop in
-                                SliderRow(
-                                    prop: prop,
-                                    value: Binding(
-                                        get: { propertyValues[prop.paramKey ?? ""] ?? prop.defaultValue ?? 0.5 },
-                                        set: { propertyValues[prop.paramKey ?? ""] = $0 }
-                                    ),
-                                    onEditEnd: { previewTrigger = UUID() }
-                                )
+                            ForEach(interactive, id: \.key) { prop in
+                                if prop.isSlider {
+                                    SliderRow(
+                                        prop: prop,
+                                        value: Binding(
+                                            get: { propertyValues[prop.paramKey ?? ""] ?? prop.defaultValue ?? 0.5 },
+                                            set: { propertyValues[prop.paramKey ?? ""] = $0 }
+                                        ),
+                                        onEditEnd: { previewTrigger = UUID() }
+                                    )
+                                } else {
+                                    switch prop.kind {
+                                    case .picker(let key, let options, _):
+                                        PickerRow(
+                                            prop: prop,
+                                            selectedValue: Binding(
+                                                get: { propertyValues[key] ?? 0 },
+                                                set: { propertyValues[key] = $0; previewTrigger = UUID() }
+                                            ),
+                                            options: options
+                                        )
+                                    case .toggle(let key, _):
+                                        ToggleRow(
+                                            prop: prop,
+                                            isOn: Binding(
+                                                get: { (propertyValues[key] ?? 0) > 0.5 },
+                                                set: { propertyValues[key] = $0 ? 1.0 : 0.0; previewTrigger = UUID() }
+                                            )
+                                        )
+                                    case .preset(let key, let options, _):
+                                        PresetRow(
+                                            prop: prop,
+                                            selectedIndex: Binding(
+                                                get: { Int(propertyValues[key] ?? -1) },
+                                                set: { idx in
+                                                    propertyValues[key] = Double(idx)
+                                                    if idx >= 0 && idx < options.count {
+                                                        for (k, v) in options[idx].values { propertyValues[k] = v }
+                                                    }
+                                                    previewTrigger = UUID()
+                                                }
+                                            )
+                                        )
+                                    default:
+                                        EmptyView()
+                                    }
+                                }
                             }
                         }
                         .padding(.horizontal, 14)
@@ -253,19 +291,43 @@ struct DetailPanelView: View {
         var values: [String: Double] = [:]
         for prop in item.properties {
             if let key = prop.paramKey, let def = prop.defaultValue { values[key] = def }
+            switch prop.kind {
+            case .picker(let key, _, let defaultIndex):
+                values[key] = Double(max(defaultIndex, 0))
+            case .toggle(let key, let defaultOn):
+                values[key] = defaultOn ? 1.0 : 0.0
+            case .preset(let key, _, _):
+                values[key] = -1.0
+            default:
+                break
+            }
         }
         propertyValues = values
     }
 
     private func buildDynamicPrompt() -> String {
-        guard hasSliders else { return item.prompt }
         var result = item.prompt
-        // Replace [number] placeholders one-by-one in slider order (first match only each time)
-        for prop in sliders {
+        // 1. Sliders: replace [number] placeholders in order
+        for prop in interactive where prop.isSlider {
             guard let key = prop.paramKey, let val = propertyValues[key] else { continue }
             let formatted = String(format: prop.format, val)
             if let range = result.range(of: "\\[[0-9.]+\\]", options: .regularExpression) {
                 result.replaceSubrange(range, with: formatted)
+            }
+        }
+        // 2. Pickers: replace {key} with selected option label
+        for prop in interactive {
+            if case .picker(let key, let options, _) = prop.kind {
+                let idx = Int(propertyValues[key] ?? 0)
+                let label = (idx >= 0 && idx < options.count) ? options[idx].label : ""
+                result = result.replacingOccurrences(of: "{\(key)}", with: label)
+            }
+        }
+        // 3. Toggles: replace {key} with true/false
+        for prop in interactive {
+            if case .toggle(let key, _) = prop.kind {
+                let on = (propertyValues[key] ?? 0) > 0.5
+                result = result.replacingOccurrences(of: "{\(key)}", with: on ? "true" : "false")
             }
         }
         return result
@@ -327,6 +389,117 @@ private struct SliderRow: View {
     }
 }
 
+// MARK: - Picker row
+
+private struct PickerRow: View {
+    let prop: AnimProperty
+    @Binding var selectedValue: Double
+    let options: [(label: String, value: Double)]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(prop.label)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.textPrimary)
+                Text(prop.key)
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Color.textTertiary)
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(Color.appBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+            }
+            HStack(spacing: 6) {
+                ForEach(Array(options.enumerated()), id: \.offset) { _, opt in
+                    let isSelected = abs(selectedValue - opt.value) < 0.01
+                    Button { selectedValue = opt.value } label: {
+                        Text(opt.label)
+                            .font(.system(size: 12, weight: isSelected ? .semibold : .regular, design: .monospaced))
+                            .foregroundStyle(isSelected ? Color.white : Color.textSecondary)
+                            .padding(.horizontal, 10).padding(.vertical, 5)
+                            .background(isSelected ? Color.chipActive : Color.appBg)
+                            .clipShape(RoundedRectangle(cornerRadius: 7))
+                    }
+                    .buttonStyle(.plain)
+                    .animation(.spring(response: 0.22, dampingFraction: 0.72), value: isSelected)
+                }
+            }
+            Text(prop.desc)
+                .font(.system(size: 10))
+                .foregroundStyle(Color.textTertiary.opacity(0.65))
+        }
+    }
+}
+
+// MARK: - Toggle row
+
+private struct ToggleRow: View {
+    let prop: AnimProperty
+    @Binding var isOn: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack {
+                    Text(prop.label)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.textPrimary)
+                    Text(prop.key)
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Color.textTertiary)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Color.appBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
+                Text(prop.desc)
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color.textTertiary.opacity(0.65))
+            }
+            Spacer()
+            Toggle("", isOn: $isOn)
+                .toggleStyle(.switch)
+                .labelsHidden()
+                .scaleEffect(0.8, anchor: .trailing)
+                .tint(Color.chipActive)
+        }
+    }
+}
+
+// MARK: - Preset row
+
+private struct PresetRow: View {
+    let prop: AnimProperty
+    @Binding var selectedIndex: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(prop.label)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.textPrimary)
+            if case .preset(_, let options, _) = prop.kind {
+                HStack(spacing: 6) {
+                    ForEach(Array(options.enumerated()), id: \.offset) { i, opt in
+                        let isSelected = selectedIndex == i
+                        Button { selectedIndex = isSelected ? -1 : i } label: {
+                            Text(opt.label)
+                                .font(.system(size: 12, weight: isSelected ? .semibold : .regular, design: .monospaced))
+                                .foregroundStyle(isSelected ? Color.white : Color.textSecondary)
+                                .padding(.horizontal, 10).padding(.vertical, 5)
+                                .background(isSelected ? Color.chipActive : Color.appBg)
+                                .clipShape(RoundedRectangle(cornerRadius: 7))
+                        }
+                        .buttonStyle(.plain)
+                        .animation(.spring(response: 0.22, dampingFraction: 0.72), value: isSelected)
+                    }
+                }
+            }
+            Text(prop.desc)
+                .font(.system(size: 10))
+                .foregroundStyle(Color.textTertiary.opacity(0.65))
+        }
+    }
+}
+
 // MARK: - Interactive Demo View
 
 private let liveInk      = Color(red: 0.13, green: 0.12, blue: 0.11)
@@ -355,10 +528,21 @@ struct InteractiveDemoView: View {
                     LiveBouncyDemo(extraBounce: values["extraBounce"] ?? 0.25)
                 case "fade":
                     LiveFadeDemo(duration: values["duration"] ?? 0.3)
+                case "slide":
+                    LiveSlideDemo(
+                        slideEdge: values["slideEdge"] ?? 0,
+                        withOpacity: (values["withOpacity"] ?? 1.0) > 0.5
+                    )
                 case "ease":
-                    LiveEaseDemo(duration: values["duration"] ?? 0.3)
+                    LiveEaseDemo(
+                        duration: values["duration"] ?? 0.3,
+                        easeKind: values["easeKind"] ?? 1.0
+                    )
                 case "linear":
-                    LiveLinearDemo(duration: values["duration"] ?? 1.0)
+                    LiveLinearDemo(
+                        duration: values["duration"] ?? 1.0,
+                        autoreverses: (values["autoreverses"] ?? 0.0) > 0.5
+                    )
                 case "scale":
                     LiveScaleDemo(
                         scaleAmount: values["scaleEffect"] ?? 0.92,
@@ -448,13 +632,23 @@ private struct LiveFadeDemo: View {
 
 private struct LiveEaseDemo: View {
     let duration: Double
+    var easeKind: Double = 1.0  // 0=easeIn, 1=easeInOut, 2=easeOut
     @State private var moved = false
+
+    private var animation: Animation {
+        switch Int(easeKind) {
+        case 0: return .easeIn(duration: duration)
+        case 2: return .easeOut(duration: duration)
+        default: return .easeInOut(duration: duration)
+        }
+    }
+
     var body: some View {
         ZStack {
             Rectangle().fill(liveInkLight).frame(width: 72, height: liveSW)
             liveCircle()
                 .offset(x: moved ? 28 : -28)
-                .animation(.easeInOut(duration: duration), value: moved)
+                .animation(animation, value: moved)
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { moved.toggle() }
@@ -465,6 +659,7 @@ private struct LiveEaseDemo: View {
 
 private struct LiveLinearDemo: View {
     let duration: Double
+    var autoreverses: Bool = false
     @State private var rotating = false
     var body: some View {
         Circle()
@@ -472,7 +667,7 @@ private struct LiveLinearDemo: View {
             .stroke(liveInk, style: StrokeStyle(lineWidth: liveSW, lineCap: .round))
             .frame(width: 38, height: 38)
             .rotationEffect(.degrees(rotating ? 360 : 0))
-            .animation(.linear(duration: duration).repeatForever(autoreverses: false), value: rotating)
+            .animation(.linear(duration: duration).repeatForever(autoreverses: autoreverses), value: rotating)
             .onAppear { rotating = true }
     }
 }
@@ -647,6 +842,52 @@ private struct LiveRubberBandDemo: View {
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { snap() }
             Timer.scheduledTimer(withTimeInterval: 2.2, repeats: true) { _ in snap() }
+        }
+    }
+}
+
+private struct LiveSlideDemo: View {
+    let slideEdge: Double   // 0=bottom, 1=top, 2=leading, 3=trailing
+    let withOpacity: Bool
+    @State private var shown = false
+
+    private var edge: Edge {
+        switch Int(slideEdge) {
+        case 1: return .top
+        case 2: return .leading
+        case 3: return .trailing
+        default: return .bottom
+        }
+    }
+    private var edgeAlignment: Alignment {
+        switch Int(slideEdge) {
+        case 1: return .top
+        case 2: return .leading
+        case 3: return .trailing
+        default: return .bottom
+        }
+    }
+    private var slideTransition: AnyTransition {
+        let base: AnyTransition = .move(edge: edge)
+        return withOpacity ? base.combined(with: .opacity) : base
+    }
+
+    var body: some View {
+        ZStack(alignment: edgeAlignment) {
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(liveInkLight, lineWidth: 1)
+                .frame(width: 44, height: 60)
+            if shown {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(liveInk.opacity(0.18))
+                    .frame(width: 44, height: 30)
+                    .transition(slideTransition)
+            }
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.78), value: shown)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { shown = true }
+            Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in shown.toggle() }
         }
     }
 }
