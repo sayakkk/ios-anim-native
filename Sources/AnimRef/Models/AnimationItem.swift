@@ -197,8 +197,12 @@ struct AnimationData {
             ],
             properties: [
                 AnimProperty(
-                    label: "투명도", key: ".opacity(0~1)",
-                    desc: "0이면 안 보임, 1이면 완전히 보임"
+                    label: "방향", key: "opacity direction",
+                    desc: "나타나기 = 0→1, 사라지기 = 1→0",
+                    kind: .picker(key: "fadeDirection", options: [
+                        (label: "나타나기", value: 0),
+                        (label: "사라지기", value: 1),
+                    ], defaultIndex: 0)
                 ),
                 AnimProperty(
                     label: "속도", key: "duration:",
@@ -216,7 +220,7 @@ SomeView()
     .opacity(isVisible ? 1 : 0)
     .animation(.easeInOut(duration: 0.3), value: isVisible)
 """,
-            prompt: "SwiftUI [뷰]가 나타날 때/사라질 때 fade 애니메이션을 적용해줘. [0.3]초, easeInOut 커브로."
+            prompt: "SwiftUI [뷰]가 {fadeDirection} fade 애니메이션을 적용해줘. [0.3]초, easeInOut 커브로."
         ),
 
         AnimationItem(

@@ -527,7 +527,10 @@ struct InteractiveDemoView: View {
                 case "bouncy":
                     LiveBouncyDemo(extraBounce: values["extraBounce"] ?? 0.25)
                 case "fade":
-                    LiveFadeDemo(duration: values["duration"] ?? 0.3)
+                    LiveFadeDemo(
+                        duration: values["duration"] ?? 0.3,
+                        fadeDirection: values["fadeDirection"] ?? 0
+                    )
                 case "slide":
                     LiveSlideDemo(
                         slideEdge: values["slideEdge"] ?? 0,
@@ -624,14 +627,28 @@ private struct LiveBouncyDemo: View {
 
 private struct LiveFadeDemo: View {
     let duration: Double
+    var fadeDirection: Double = 0  // 0=나타나기, 1=사라지기
     @State private var visible = false
+
+    private var isAppearing: Bool { fadeDirection < 0.5 }
+
     var body: some View {
         liveCircle()
             .opacity(visible ? 1 : 0.05)
             .animation(.easeInOut(duration: duration), value: visible)
             .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { visible.toggle() }
-                Timer.scheduledTimer(withTimeInterval: duration + 0.5, repeats: true) { _ in visible.toggle() }
+                // 나타나기: 숨은 상태에서 시작 → 보임
+                // 사라지기: 보인 상태에서 시작 → 숨음
+                visible = !isAppearing
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    visible = isAppearing
+                }
+                Timer.scheduledTimer(withTimeInterval: duration + 0.9, repeats: true) { _ in
+                    var t = Transaction(animation: .none)
+                    t.disablesAnimations = true
+                    withTransaction(t) { visible = !isAppearing }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { visible = isAppearing }
+                }
             }
     }
 }
