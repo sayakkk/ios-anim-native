@@ -32,7 +32,6 @@ struct ContentView: View {
             Rectangle()
                 .frame(width: 1)
                 .foregroundStyle(Color.divider)
-                .ignoresSafeArea()
 
             Group {
                 if let item = selectedItem {
@@ -43,7 +42,9 @@ struct ContentView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .safeAreaPadding(.top)
         }
+        .ignoresSafeArea(edges: .top)
         .background(Color.appBg.ignoresSafeArea())
         .preferredColorScheme(.light)
         .toolbarBackground(Color.appBg, for: .windowToolbar)
@@ -199,6 +200,7 @@ private struct SidebarView: View {
                 }
             }
         } // VStack
+        .safeAreaPadding(.top)
     }
 }
 
