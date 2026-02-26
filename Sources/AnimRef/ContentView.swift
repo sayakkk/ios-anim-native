@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 // MARK: - App-wide color tokens
 extension Color {
@@ -39,7 +40,7 @@ struct ContentView: View {
             }
         }
         .preferredColorScheme(.light)
-        .toolbar(.hidden, for: .windowToolbar)
+        .background(WindowAccessor())
     }
 }
 
@@ -216,6 +217,24 @@ private struct EmptyDetailPlaceholder: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.appBg)
+    }
+}
+
+// MARK: - Window accessor (traffic lights visible, toolbar hidden)
+
+private struct WindowAccessor: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView { AccessorView() }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    class AccessorView: NSView {
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            guard let window else { return }
+            window.titlebarAppearsTransparent = true
+            window.titleVisibility = .hidden
+            window.styleMask.insert(.fullSizeContentView)
+            window.toolbar = nil
+        }
     }
 }
 
