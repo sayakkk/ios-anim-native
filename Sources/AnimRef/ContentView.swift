@@ -21,28 +21,31 @@ struct ContentView: View {
     @State private var selectedItem: AnimationItem? = nil
 
     var body: some View {
-        NavigationSplitView {
+        HStack(spacing: 0) {
             SidebarView(
                 search: $search,
                 activeCategory: $activeCategory,
                 selectedItem: $selectedItem
             )
-            .navigationSplitViewColumnWidth(min: 300, ideal: 360, max: 460)
-            .navigationTitle("iOS 움직임 사전")
-        } detail: {
-            if let item = selectedItem {
-                DetailPanelView(item: item)
-                    .id(item.id)                       // re-render on card switch
-                    .navigationTitle("")
-                    .background(Color.appBg.ignoresSafeArea())
-            } else {
-                EmptyDetailPlaceholder()
-                    .navigationTitle("")
-                    .background(Color.appBg.ignoresSafeArea())
+            .frame(minWidth: 260, idealWidth: 300, maxWidth: 380)
+
+            Rectangle()
+                .frame(width: 1)
+                .foregroundStyle(Color.divider)
+                .ignoresSafeArea()
+
+            Group {
+                if let item = selectedItem {
+                    DetailPanelView(item: item)
+                        .id(item.id)
+                } else {
+                    EmptyDetailPlaceholder()
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .background(Color.appBg.ignoresSafeArea())
         .preferredColorScheme(.light)
-        .toolbarBackground(Color.appBg, for: .windowToolbar)
         .background(WindowAccessor())
     }
 }
@@ -77,9 +80,7 @@ private struct SidebarView: View {
     private var filteredCombos: [AnimationItem]  { filtered(AnimationData.combos) }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            Color.appBg.ignoresSafeArea()   // fills behind titlebar
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
 
             // ── Search ─────────────────────────────────────────────
             HStack(spacing: 7) {
@@ -101,9 +102,8 @@ private struct SidebarView: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
-            .background(Color.white)
+            .background(Color.black.opacity(0.05))
             .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.cardBorder, lineWidth: 1))
             .padding(.horizontal, 14)
             .padding(.top, 12)
             .padding(.bottom, 10)
@@ -132,8 +132,6 @@ private struct SidebarView: View {
                 .padding(.horizontal, 14)
             }
             .padding(.bottom, 10)
-
-            Divider().overlay(Color.divider)
 
             // ── Card grid ────────────────────────────────────────────
             ScrollView {
@@ -199,9 +197,7 @@ private struct SidebarView: View {
                     }
                 }
             }
-            .background(Color.appBg)
-            } // VStack
-        } // ZStack
+        } // VStack
     }
 }
 
