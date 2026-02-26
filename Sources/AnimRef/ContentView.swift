@@ -34,6 +34,7 @@ struct ContentView: View {
                 DetailPanelView(item: item)
                     .id(item.id)                       // re-render on card switch
                     .navigationTitle("")
+                    .background(Color.appBg)
             } else {
                 EmptyDetailPlaceholder()
                     .navigationTitle("")

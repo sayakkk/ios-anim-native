@@ -283,6 +283,7 @@ struct DetailPanelView: View {
                 .padding(.bottom, 60)
             }
         }
+        .scrollContentBackground(.hidden)
         .background(Color.appBg)
         .onAppear { initPropertyValues() }
     }
