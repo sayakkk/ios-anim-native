@@ -34,10 +34,11 @@ struct ContentView: View {
                 DetailPanelView(item: item)
                     .id(item.id)                       // re-render on card switch
                     .navigationTitle("")
-                    .background(Color.appBg)
+                    .background(Color.appBg.ignoresSafeArea())
             } else {
                 EmptyDetailPlaceholder()
                     .navigationTitle("")
+                    .background(Color.appBg.ignoresSafeArea())
             }
         }
         .preferredColorScheme(.light)
@@ -235,6 +236,7 @@ private struct WindowAccessor: NSViewRepresentable {
             window.titleVisibility = .hidden
             window.styleMask.insert(.fullSizeContentView)
             window.toolbar = nil
+            window.backgroundColor = NSColor(srgbRed: 0.93, green: 0.92, blue: 0.91, alpha: 1)
         }
     }
 }
