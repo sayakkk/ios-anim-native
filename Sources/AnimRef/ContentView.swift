@@ -46,6 +46,7 @@ struct ContentView: View {
         }
         .background(Color.appBg.ignoresSafeArea())
         .preferredColorScheme(.light)
+        .toolbarBackground(Color.appBg, for: .windowToolbar)
         .background(WindowAccessor())
     }
 }
@@ -236,6 +237,7 @@ private struct WindowAccessor: NSViewRepresentable {
             window.styleMask.insert(.fullSizeContentView)
             window.toolbar = nil
             window.backgroundColor = NSColor(srgbRed: 0.93, green: 0.92, blue: 0.91, alpha: 1)
+            window.isOpaque = true
         }
     }
 }
