@@ -77,7 +77,9 @@ private struct SidebarView: View {
     private var filteredCombos: [AnimationItem]  { filtered(AnimationData.combos) }
 
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack(alignment: .top) {
+            Color.appBg.ignoresSafeArea()   // fills behind titlebar
+            VStack(spacing: 0) {
 
             // ── Search ─────────────────────────────────────────────
             HStack(spacing: 7) {
@@ -198,8 +200,8 @@ private struct SidebarView: View {
                 }
             }
             .background(Color.appBg)
-        }
-        .background(Color.appBg)
+            } // VStack
+        } // ZStack
     }
 }
 
