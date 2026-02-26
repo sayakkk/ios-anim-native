@@ -118,22 +118,27 @@ struct FadeDemo: View {
 // MARK: - Slide
 struct SlideDemo: View {
     @State private var shown = false
+    private let W: CGFloat = 52
+    private let H: CGFloat = 68
     var body: some View {
-        ZStack {
-            // Track line
-            Rectangle()
-                .fill(inkLight)
-                .frame(width: strokeW, height: 40)
-                .offset(y: 10)
-
+        ZStack(alignment: .bottom) {
+            // 화면 틀
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(ink.opacity(0.35), lineWidth: strokeW)
+                .frame(width: W, height: H)
+            // 슬라이드 패널
             if shown {
-                circle()
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(ink.opacity(0.15))
+                    .overlay(RoundedRectangle(cornerRadius: 5).stroke(ink.opacity(0.30), lineWidth: 1))
+                    .frame(width: W - 2, height: H * 0.46)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .animation(.spring(response: 0.38, dampingFraction: 0.70), value: shown)
+        .clipped()
+        .animation(.spring(response: 0.4, dampingFraction: 0.78), value: shown)
         .onAppear {
-            Timer.scheduledTimer(withTimeInterval: 1.44, repeats: true) { _ in shown.toggle() }
+            Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in shown.toggle() }
         }
     }
 }

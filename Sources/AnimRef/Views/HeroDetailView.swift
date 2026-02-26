@@ -131,10 +131,7 @@ struct DetailPanelView: View {
                                 .scaleEffect(copiedPrompt ? 0.9 : 1.0)
                                 .animation(.spring(response: 0.25, dampingFraction: 0.65), value: copiedPrompt)
                         }
-                        Text(buildDynamicPrompt())
-                            .font(.system(size: 12))
-                            .italic()
-                            .foregroundStyle(Color.textSecondary)
+                        coloredPromptText(buildDynamicPrompt())
                             .lineSpacing(4)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -147,6 +144,11 @@ struct DetailPanelView: View {
                 .buttonStyle(.plain)
                 .padding(.horizontal, 22)
                 .padding(.top, 10)
+                Text("[적용할 대상]에 원하는 뷰/컴포넌트 이름을 넣으세요.")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color.textTertiary.opacity(0.7))
+                    .padding(.horizontal, 26)
+                    .padding(.top, 2)
 
                 // ── Title block ───────────────────────────────────────
                 VStack(alignment: .leading, spacing: 6) {
@@ -328,6 +330,33 @@ struct DetailPanelView: View {
             if case .toggle(let key, _) = prop.kind {
                 let on = (propertyValues[key] ?? 0) > 0.5
                 result = result.replacingOccurrences(of: "{\(key)}", with: on ? "true" : "false")
+            }
+        }
+        return result
+    }
+
+    private func coloredPromptText(_ text: String) -> Text {
+        var result = Text("")
+        var remaining = text
+        let pattern = "\\[[^\\]]+\\]"
+        while !remaining.isEmpty {
+            if let range = remaining.range(of: pattern, options: .regularExpression) {
+                let before = String(remaining[..<range.lowerBound])
+                if !before.isEmpty {
+                    result = result + Text(before)
+                        .font(.system(size: 12)).italic()
+                        .foregroundStyle(Color.textSecondary)
+                }
+                let bracket = String(remaining[range])
+                result = result + Text(bracket)
+                    .font(.system(size: 12, weight: .semibold)).italic()
+                    .foregroundStyle(Color(red: 0.2, green: 0.45, blue: 0.9))
+                remaining = String(remaining[range.upperBound...])
+            } else {
+                result = result + Text(remaining)
+                    .font(.system(size: 12)).italic()
+                    .foregroundStyle(Color.textSecondary)
+                break
             }
         }
         return result
@@ -1205,7 +1234,7 @@ private struct ContentSection<Content: View>: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title.uppercased())
                 .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(Color.textTertiary)
+                .foregroundStyle(Color.textSecondary)
                 .kerning(0.8)
             content
         }
