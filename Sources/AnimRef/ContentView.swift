@@ -232,12 +232,26 @@ private struct WindowAccessor: NSViewRepresentable {
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             guard let window else { return }
+
+            let appBgColor = NSColor(srgbRed: 0.93, green: 0.92, blue: 0.91, alpha: 1)
+
             window.titlebarAppearsTransparent = true
             window.titleVisibility = .hidden
             window.styleMask.insert(.fullSizeContentView)
             window.toolbar = nil
-            window.backgroundColor = NSColor(srgbRed: 0.93, green: 0.92, blue: 0.91, alpha: 1)
+            window.backgroundColor = appBgColor
             window.isOpaque = true
+
+            // 타이틀바 컨테이너에 직접 배경색 레이어 삽입
+            if let titlebarContainer = window.standardWindowButton(.closeButton)?
+                    .superview?.superview {
+                let bg = NSView()
+                bg.wantsLayer = true
+                bg.layer?.backgroundColor = appBgColor.cgColor
+                bg.autoresizingMask = [.width, .height]
+                bg.frame = titlebarContainer.bounds
+                titlebarContainer.addSubview(bg, positioned: .below, relativeTo: nil)
+            }
         }
     }
 }
