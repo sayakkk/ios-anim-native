@@ -270,7 +270,7 @@ private struct DividerLineView: NSViewRepresentable {
             let h = window.frame.height          // full window height incl. titlebar
             let line = NSView(frame: CGRect(x: targetX, y: 0, width: 1, height: h))
             line.wantsLayer = true
-            line.layer?.backgroundColor = NSColor(red: 0.88, green: 0.86, blue: 0.83, alpha: 1).cgColor
+            line.layer?.backgroundColor = NSColor(red: 0.72, green: 0.70, blue: 0.67, alpha: 1).cgColor
             line.autoresizingMask = [.height]
             contentView.addSubview(line)
             divider = line
