@@ -141,14 +141,14 @@ struct AnimationData {
             when: "팝업 등장, 버튼 눌림 후 원상복귀",
             realApps: [
                 RealAppExample(
-                    name: "Duolingo 캐릭터",
-                    code: ".bouncy(duration: 0.4,\n extraBounce: 0.30)",
-                    note: "정답 맞출 때 캐릭터가 3번 통통 튀는 효과"
+                    name: "홈 화면 아이콘 이동",
+                    code: ".bouncy(duration: 0.32,\n extraBounce: 0.28)",
+                    note: "앱 아이콘을 이동시키고 놓을 때 그리드에 통통 튀며 착지"
                 ),
                 RealAppExample(
-                    name: "어린이 앱 인터랙션",
-                    code: ".bouncy(duration: 0.35,\n extraBounce: 0.25)",
-                    note: "탭할 때마다 과장된 bounce로 재미 표현"
+                    name: "Spotlight 검색 결과",
+                    code: ".bouncy(duration: 0.30,\n extraBounce: 0.22)",
+                    note: "검색어 입력 시 결과 카드들이 아래에서 통통 튀며 올라옴"
                 ),
             ],
             properties: [
@@ -597,9 +597,9 @@ ForEach(Array(items.enumerated()), id: \\.offset) { index, item in
                     note: "5개 원형 막대가 파도처럼 높이 변화. 음성 입력 시각화"
                 ),
                 RealAppExample(
-                    name: "Spotify 재생 바",
-                    code: ".easeInOut(duration: 0.40)\n.repeatForever(autoreverses: true)\n.delay(Double(i) * 0.09)",
-                    note: "3개 막대 이퀄라이저. 현재 재생 중인 트랙 표시"
+                    name: "Apple Music 이퀄라이저",
+                    code: ".easeInOut(duration: 0.38)\n.repeatForever(autoreverses: true)\n.delay(Double(i) * 0.08)",
+                    note: "현재 재생 중인 트랙 옆 3개 막대가 파도처럼 위아래로 움직임"
                 ),
             ],
             properties: [
@@ -644,12 +644,12 @@ HStack(spacing: 4) {
             when: "좋아요 뱃지, 알림 카운트, 새 아이템 추가",
             realApps: [
                 RealAppExample(
-                    name: "인스타그램 좋아요 하트",
-                    code: ".spring(bounce: 0.55)\n.scale(scale: 0.05)\n.combined(with: .opacity)",
-                    note: "하트를 누르는 순간 점에서 커지며 통통 튀며 등장"
+                    name: "Safari 즐겨찾기 추가",
+                    code: ".spring(bounce: 0.50)\n.scale(scale: 0.05)\n.combined(with: .opacity)",
+                    note: "즐겨찾기 추가 시 별 아이콘이 점에서 커지며 통통 튀며 등장"
                 ),
                 RealAppExample(
-                    name: "앱 아이콘 뱃지",
+                    name: "앱 아이콘 알림 뱃지",
                     code: ".spring(bounce: 0.45)\n.scale(scale: 0.10)\n.combined(with: .opacity)",
                     note: "새 알림 뱃지가 10%에서 시작해 뿅 하고 나타남"
                 ),
@@ -677,6 +677,223 @@ if showBadge {
 }
 """,
             prompt: "SwiftUI [적용할 대상]이 나타날 때 뿅 하고 통통 튀며 등장하는 pop in 애니메이션을 만들어줘. startScale [0.1], bounce [0.5]."
+        ),
+
+        AnimationItem(
+            kind: .combo,
+            id: "hero",
+            name: "Matched Geometry",
+            situationCategory: "📱 화면 전환",
+            feel: "카드가 자연스럽게 다음 화면이 되는 느낌",
+            feelDesc: "선택한 요소가 위치와 크기를 유지하며 다음 화면으로 이어지는 공유 전환 효과",
+            when: "앱스토어 카드 탭, 사진 그리드 → 전체화면, 리스트 → 디테일",
+            realApps: [
+                RealAppExample(
+                    name: "앱스토어 Today 카드",
+                    code: ".matchedGeometryEffect(id: id,\n in: namespace)",
+                    note: "카드를 탭하면 전체 화면으로 자연스럽게 확장. iOS 앱스토어 대표 전환"
+                ),
+                RealAppExample(
+                    name: "사진 앱 그리드 → 전체화면",
+                    code: ".matchedGeometryEffect(id: photoID,\n in: namespace)",
+                    note: "썸네일이 그대로 확대되며 전체화면으로 이어짐"
+                ),
+            ],
+            properties: [
+                AnimProperty(
+                    label: "spring 빠르기", key: "response:",
+                    desc: "0.35~0.45가 자연스러운 Hero 전환 속도",
+                    paramKey: "response", minValue: 0.2, maxValue: 0.8, defaultValue: 0.4, step: 0.01
+                ),
+                AnimProperty(
+                    label: "탄성", key: "dampingFraction:",
+                    desc: "0.85~0.95이면 거의 안 튀고 부드럽게",
+                    paramKey: "dampingFraction", minValue: 0.5, maxValue: 1.0, defaultValue: 0.88, step: 0.01
+                ),
+            ],
+            swiftui: """
+@Namespace private var heroNS
+
+// Source (리스트)
+RoundedRectangle(cornerRadius: 12)
+    .matchedGeometryEffect(id: "card", in: heroNS)
+    .frame(width: 160, height: 100)
+    .onTapGesture {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.88)) {
+            isExpanded = true
+        }
+    }
+
+// Destination (디테일)
+if isExpanded {
+    RoundedRectangle(cornerRadius: 12)
+        .matchedGeometryEffect(id: "card", in: heroNS)
+        .ignoresSafeArea()
+}
+""",
+            prompt: "SwiftUI에서 카드를 탭하면 matchedGeometryEffect로 전체화면으로 확장되는 Hero 전환을 만들어줘. response [0.4], dampingFraction [0.88]."
+        ),
+
+        AnimationItem(
+            kind: .combo,
+            id: "flip",
+            name: "3D Flip",
+            situationCategory: "📱 화면 전환",
+            feel: "카드가 뒤집히는 느낌",
+            feelDesc: "카드나 뷰가 3D로 회전하며 앞뒤 내용이 바뀌는 입체적인 전환 효과",
+            when: "플래시카드, 결제 카드 전환, 정보 카드 뒤집기",
+            realApps: [
+                RealAppExample(
+                    name: "Wallet 카드 추가 확인",
+                    code: ".rotation3DEffect(.degrees(180),\n axis: (0, 1, 0))\n.spring(response: 0.5,\n dampingFraction: 0.80)",
+                    note: "카드가 뒤집히며 카드 정보 공개. Y축 회전"
+                ),
+                RealAppExample(
+                    name: "시계 앱 알람 세부 설정",
+                    code: ".rotation3DEffect(.degrees(180),\n axis: (1, 0, 0))\n.spring(response: 0.45,\n dampingFraction: 0.85)",
+                    note: "X축 뒤집기로 알람 세부 설정 화면 전환"
+                ),
+            ],
+            properties: [
+                AnimProperty(
+                    label: "회전 축", key: "axis:",
+                    desc: "Y축 = 좌우 뒤집기 / X축 = 위아래 뒤집기",
+                    kind: .picker(key: "flipAxis", options: [
+                        (label: "Y축 (좌우)", value: 0),
+                        (label: "X축 (위아래)", value: 1),
+                    ], defaultIndex: 0)
+                ),
+                AnimProperty(
+                    label: "spring 빠르기", key: "response:",
+                    desc: "0.4~0.6이 자연스러운 뒤집기 속도",
+                    paramKey: "response", minValue: 0.2, maxValue: 1.0, defaultValue: 0.5, step: 0.01
+                ),
+            ],
+            swiftui: """
+@State var isFlipped = false
+
+ZStack {
+    if !isFlipped {
+        FrontView()
+            .rotation3DEffect(.degrees(0), axis: (0, 1, 0))
+    } else {
+        BackView()
+            .rotation3DEffect(.degrees(180), axis: (0, 1, 0))
+    }
+}
+.rotation3DEffect(
+    .degrees(isFlipped ? 180 : 0),
+    axis: (x: 0, y: 1, z: 0)
+)
+.animation(.spring(response: 0.5, dampingFraction: 0.80), value: isFlipped)
+.onTapGesture { isFlipped.toggle() }
+""",
+            prompt: "SwiftUI [적용할 대상]이 탭하면 3D로 뒤집히게 해줘. {flipAxis} 뒤집기, response [0.5]."
+        ),
+
+        AnimationItem(
+            kind: .combo,
+            id: "blur-reveal",
+            name: "Blur + Fade",
+            situationCategory: "📱 화면 전환",
+            feel: "뒤가 흐려지며 패널이 등장하는 느낌",
+            feelDesc: "모달이나 시트가 열릴 때 배경이 블러되고 콘텐츠가 서서히 나타나는 효과",
+            when: "액션 시트, 설정 모달, 확인 다이얼로그, 오버레이 패널",
+            realApps: [
+                RealAppExample(
+                    name: "iOS 제어 센터",
+                    code: ".blur(radius: 20)\n.animation(.easeOut(duration: 0.28))",
+                    note: "홈 화면이 블러되며 제어 센터 패널이 fade in으로 올라옴"
+                ),
+                RealAppExample(
+                    name: "앱 전환기 (홈 바 스와이프 업)",
+                    code: ".blur(radius: 16)\n.animation(.spring(response: 0.4,\n dampingFraction: 0.90))",
+                    note: "현재 앱이 블러+축소되며 앱 카드 목록 등장"
+                ),
+            ],
+            properties: [
+                AnimProperty(
+                    label: "블러 강도", key: "radius:",
+                    desc: "10~25가 자연스러운 배경 블러 범위",
+                    paramKey: "blurRadius", minValue: 2, maxValue: 40, defaultValue: 18, step: 1, format: "%.0f"
+                ),
+                AnimProperty(
+                    label: "페이드 속도", key: "duration:",
+                    desc: "0.2~0.35초가 모달 등장 타이밍과 잘 맞음",
+                    paramKey: "fadeDuration", minValue: 0.1, maxValue: 0.8, defaultValue: 0.28, step: 0.02, format: "%.2f"
+                ),
+            ],
+            swiftui: """
+ZStack {
+    // 배경
+    ContentView()
+        .blur(radius: showModal ? 18 : 0)
+        .animation(.easeOut(duration: 0.28), value: showModal)
+
+    // 모달
+    if showModal {
+        ModalPanel()
+            .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            .animation(
+                .spring(response: 0.35, dampingFraction: 0.85),
+                value: showModal
+            )
+    }
+}
+""",
+            prompt: "SwiftUI 모달이 등장할 때 배경이 blurRadius [18]pt로 블러되고 패널이 fade in되게 해줘. 속도 [0.28]초."
+        ),
+
+        AnimationItem(
+            kind: .combo,
+            id: "symbol-effect",
+            name: "Symbol Effect",
+            situationCategory: "🔔 알림 · 피드백",
+            feel: "아이콘이 살아 움직이는 느낌",
+            feelDesc: "SF Symbols에 내장된 벡터 애니메이션. 코드 한 줄로 흔들기·통통 튀기·반짝이기 가능 (iOS 17+, macOS 14+)",
+            when: "완료/오류 피드백 아이콘, 즐겨찾기 토글, 상태 변화 아이콘",
+            realApps: [
+                RealAppExample(
+                    name: "메일 앱 별표 토글",
+                    code: ".symbolEffect(.bounce, value: isStarred)",
+                    note: "별 아이콘이 통통 튀며 즐겨찾기 상태 전환"
+                ),
+                RealAppExample(
+                    name: "알람 앱 켜기/끄기",
+                    code: ".symbolEffect(.pulse, value: isOn)",
+                    note: "벨 아이콘이 반짝이며 활성/비활성 전환"
+                ),
+            ],
+            properties: [
+                AnimProperty(
+                    label: "효과 종류", key: ".symbolEffect()",
+                    desc: "bounce=통통 / pulse=반짝임 / wiggle=흔들 / scale=크기",
+                    kind: .picker(key: "symbolEffectKind", options: [
+                        (label: ".bounce",  value: 0),
+                        (label: ".pulse",   value: 1),
+                        (label: ".wiggle",  value: 2),
+                        (label: ".scale",   value: 3),
+                    ], defaultIndex: 0)
+                ),
+            ],
+            swiftui: """
+// iOS 17+ / macOS 14+
+@State var isFavorited = false
+@State var triggerCount = 0
+
+Image(systemName: isFavorited ? "star.fill" : "star")
+    .symbolEffect(.bounce, value: triggerCount)
+    .foregroundStyle(isFavorited ? .yellow : .gray)
+    .onTapGesture {
+        isFavorited.toggle()
+        triggerCount += 1
+    }
+
+// 지속 효과 (계속 반복)
+Image(systemName: "waveform")
+    .symbolEffect(.variableColor.iterative.reversing)
+""",
+            prompt: "SwiftUI [SF Symbol 이름]에 {symbolEffectKind} symbolEffect를 적용해줘. 상태 변화 시 발동."
         ),
 
         AnimationItem(

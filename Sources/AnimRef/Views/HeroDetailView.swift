@@ -647,6 +647,23 @@ struct InteractiveDemoView: View {
                         resistanceFactor: values["resistanceFactor"] ?? 3.0,
                         dampingFraction: values["dampingFraction"] ?? 0.6
                     )
+                case "hero":
+                    LiveHeroDemo(
+                        response: values["response"] ?? 0.4,
+                        dampingFraction: values["dampingFraction"] ?? 0.88
+                    )
+                case "flip":
+                    LiveFlipDemo(
+                        flipAxis: values["flipAxis"] ?? 0,
+                        response: values["response"] ?? 0.5
+                    )
+                case "blur-reveal":
+                    LiveBlurRevealDemo(
+                        blurRadius: values["blurRadius"] ?? 18,
+                        fadeDuration: values["fadeDuration"] ?? 0.28
+                    )
+                case "symbol-effect":
+                    LiveSymbolEffectDemo(effectKind: values["symbolEffectKind"] ?? 0)
                 default:
                     liveCircle()
                 }
@@ -954,6 +971,205 @@ private struct LiveRubberBandDemo: View {
     }
 }
 
+private struct LiveHeroDemo: View {
+    let response: Double
+    let dampingFraction: Double
+    @State private var expanded = false
+
+    var body: some View {
+        ZStack {
+            // 배경 카드 (작은 상태)
+            if !expanded {
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(liveInk, lineWidth: liveSW)
+                    .frame(width: 80, height: 54)
+                    .transition(.identity)
+            }
+            // Hero 카드 (expanded)
+            RoundedRectangle(cornerRadius: expanded ? 22 : 14)
+                .stroke(liveInk, lineWidth: expanded ? liveSW * 1.2 : liveSW)
+                .frame(
+                    width:  expanded ? 160 : 80,
+                    height: expanded ? 108 : 54
+                )
+                .overlay(
+                    VStack(spacing: 5) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(liveInk.opacity(0.18))
+                            .frame(width: expanded ? 80 : 38, height: expanded ? 7 : 5)
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(liveInk.opacity(0.10))
+                            .frame(width: expanded ? 54 : 26, height: expanded ? 5 : 4)
+                    }
+                )
+                .animation(.spring(response: response, dampingFraction: dampingFraction), value: expanded)
+        }
+        .onAppear {
+            func cycle() {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { expanded = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { expanded = false }
+            }
+            cycle()
+            Timer.scheduledTimer(withTimeInterval: 2.8, repeats: true) { _ in cycle() }
+        }
+    }
+}
+
+private struct LiveFlipDemo: View {
+    let flipAxis: Double   // 0=Y축, 1=X축
+    let response: Double
+    @State private var flipped = false
+
+    private var axis: (CGFloat, CGFloat, CGFloat) {
+        flipAxis < 0.5 ? (0, 1, 0) : (1, 0, 0)
+    }
+
+    var body: some View {
+        ZStack {
+            // 앞면
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(liveInk, lineWidth: liveSW)
+                .frame(width: 72, height: 46)
+                .overlay(
+                    HStack(spacing: 3) {
+                        ForEach(0..<3, id: \.self) { _ in
+                            RoundedRectangle(cornerRadius: 2).fill(liveInk.opacity(0.20)).frame(width: 12, height: 4)
+                        }
+                    }
+                )
+                .opacity(flipped ? 0 : 1)
+            // 뒷면
+            RoundedRectangle(cornerRadius: 10)
+                .fill(liveInk.opacity(0.07))
+                .stroke(liveInk.opacity(0.55), lineWidth: liveSW)
+                .frame(width: 72, height: 46)
+                .overlay(
+                    Text("뒷면")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(liveInk.opacity(0.40))
+                )
+                .opacity(flipped ? 1 : 0)
+                .rotation3DEffect(
+                    .degrees(flipAxis < 0.5 ? 180 : 0),
+                    axis: (1, 0, 0)
+                )
+        }
+        .rotation3DEffect(
+            .degrees(flipped ? 180 : 0),
+            axis: axis
+        )
+        .animation(.spring(response: response, dampingFraction: 0.80), value: flipped)
+        .onAppear {
+            func cycle() {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { flipped = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { flipped = false }
+            }
+            cycle()
+            Timer.scheduledTimer(withTimeInterval: 2.6, repeats: true) { _ in cycle() }
+        }
+    }
+}
+
+private struct LiveBlurRevealDemo: View {
+    let blurRadius: Double
+    let fadeDuration: Double
+    @State private var modalShown = false
+
+    var body: some View {
+        ZStack {
+            // 배경 콘텐츠
+            VStack(spacing: 5) {
+                ForEach(0..<3, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(liveInk.opacity(0.12))
+                        .frame(width: CGFloat(54 - i * 6), height: 6)
+                }
+            }
+            .blur(radius: modalShown ? blurRadius * 0.12 : 0)
+            .animation(.easeOut(duration: fadeDuration), value: modalShown)
+
+            // 모달 패널
+            if modalShown {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.white.opacity(0.94))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(liveInk.opacity(0.12), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 3)
+                    .frame(width: 88, height: 54)
+                    .overlay(
+                        VStack(spacing: 5) {
+                            RoundedRectangle(cornerRadius: 2).fill(liveInk.opacity(0.20)).frame(width: 42, height: 4)
+                            RoundedRectangle(cornerRadius: 2).fill(liveInk.opacity(0.10)).frame(width: 30, height: 4)
+                        }
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            }
+        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: modalShown)
+        .onAppear {
+            func cycle() {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { modalShown = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { modalShown = false }
+            }
+            cycle()
+            Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in cycle() }
+        }
+    }
+}
+
+@available(macOS 14.0, *)
+private struct LiveSymbolEffectInner: View {
+    let effectKind: Double
+    @State private var trigger = 0
+
+    var body: some View {
+        Group {
+            switch Int(effectKind) {
+            case 1:
+                Image(systemName: "bell.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(liveInk.opacity(0.55))
+                    .symbolEffect(.pulse, isActive: true)
+            case 2:
+                Image(systemName: "bell.badge.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(liveInk.opacity(0.55))
+                    .symbolEffect(.bounce, value: trigger)
+            case 3:
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(liveInk.opacity(0.55))
+                    .symbolEffect(.bounce, value: trigger)
+            default:
+                Image(systemName: "star.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(liveInk.opacity(0.55))
+                    .symbolEffect(.bounce, value: trigger)
+            }
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { trigger += 1 }
+            Timer.scheduledTimer(withTimeInterval: 1.4, repeats: true) { _ in trigger += 1 }
+        }
+    }
+}
+
+private struct LiveSymbolEffectDemo: View {
+    let effectKind: Double
+
+    var body: some View {
+        if #available(macOS 14.0, *) {
+            LiveSymbolEffectInner(effectKind: effectKind)
+        } else {
+            Image(systemName: "star.fill")
+                .font(.system(size: 32))
+                .foregroundStyle(liveInk.opacity(0.30))
+        }
+    }
+}
+
 private struct LiveSlideDemo: View {
     let slideEdge: Double   // 0=bottom, 1=top, 2=leading, 3=trailing
     let withOpacity: Bool
@@ -1059,21 +1275,24 @@ private struct MiniAnimScene: View {
     let text: String
 
     private enum Kind {
-        case heart, button, pin, waveform, bottomSheet, list, badge, spinner, progress, transition, chat, pullRefresh
+        case heart, button, pin, waveform, bottomSheet, list, badge, spinner, progress, transition, chat, pullRefresh, hero, flip, blur, symbol
     }
     private var kind: Kind {
         let s = text.lowercased()
         if s.contains("하트") || s.contains("좋아요") { return .heart }
         if s.contains("비밀번호") || s.contains("핀") || s.contains("잠금") { return .pin }
-        if s.contains("음성") || s.contains("siri") || s.contains("재생 바") || s.contains("spotify") { return .waveform }
+        if s.contains("음성") || s.contains("siri") || s.contains("이퀄라이저") || s.contains("재생") { return .waveform }
         if s.contains("당겨") || s.contains("pull") { return .pullRefresh }
         if s.contains("시트") || s.contains("알림 센터") { return .bottomSheet }
-        if (s.contains("카카오") && s.contains("설정")) || s.contains("화면 전환") || s.contains("네비게이션") { return .transition }
+        if s.contains("앱스토어") || s.contains("그리드") || s.contains("hero") { return .hero }
+        if s.contains("뒤집") || s.contains("wallet") || s.contains("알람") { return .flip }
+        if s.contains("블러") || s.contains("제어 센터") || s.contains("전환기") { return .blur }
+        if s.contains("별표") || s.contains("알람 앱") || s.contains("symbol") { return .symbol }
         if s.contains("설정") || s.contains("리스트") || s.contains("목록") || s.contains("추천") { return .list }
-        if s.contains("배지") || s.contains("뱃지") { return .badge }
+        if s.contains("배지") || s.contains("뱃지") || s.contains("즐겨찾기") { return .badge }
         if s.contains("로딩") || s.contains("스피너") || s.contains("연결") || s.contains("페어링") { return .spinner }
         if s.contains("프로그레스") { return .progress }
-        if s.contains("화면 전환") || s.contains("전환") { return .transition }
+        if s.contains("전환") { return .transition }
         if s.contains("카카오") || s.contains("메시지") { return .chat }
         return .button
     }
@@ -1092,6 +1311,10 @@ private struct MiniAnimScene: View {
         case .progress:    MiniProgress()
         case .transition:  MiniTransition()
         case .chat:        MiniChat()
+        case .hero:        MiniHero()
+        case .flip:        MiniFlip()
+        case .blur:        MiniBlur()
+        case .symbol:      MiniSymbol()
         }
     }
 }
@@ -1258,6 +1481,80 @@ private struct MiniChat: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) { step = 1 }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) { step = 2 }
         }
+    }
+}
+
+private struct MiniHero: View {
+    @State private var expanded = false
+    var body: some View {
+        RoundedRectangle(cornerRadius: expanded ? 8 : 5)
+            .stroke(mc.opacity(0.35), lineWidth: 1.5)
+            .frame(width: expanded ? 38 : 20, height: expanded ? 26 : 14)
+            .animation(.spring(response: 0.38, dampingFraction: 0.88), value: expanded)
+            .onAppear {
+                Timer.scheduledTimer(withTimeInterval: 1.6, repeats: true) { _ in expanded.toggle() }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { expanded = true }
+            }
+    }
+}
+
+private struct MiniFlip: View {
+    @State private var flipped = false
+    var body: some View {
+        RoundedRectangle(cornerRadius: 5)
+            .fill(flipped ? mc.opacity(0.12) : Color.clear)
+            .overlay(RoundedRectangle(cornerRadius: 5).stroke(mc.opacity(0.32), lineWidth: 1.5))
+            .frame(width: 28, height: 18)
+            .rotation3DEffect(.degrees(flipped ? 180 : 0), axis: (0, 1, 0))
+            .animation(.spring(response: 0.5, dampingFraction: 0.80), value: flipped)
+            .onAppear {
+                Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in flipped.toggle() }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { flipped = true }
+            }
+    }
+}
+
+private struct MiniBlur: View {
+    @State private var shown = false
+    var body: some View {
+        ZStack {
+            VStack(spacing: 3) {
+                ForEach(0..<3, id: \.self) { _ in
+                    RoundedRectangle(cornerRadius: 2).fill(mc.opacity(0.15)).frame(width: 28, height: 3)
+                }
+            }
+            .blur(radius: shown ? 1.5 : 0)
+            if shown {
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(Color.white.opacity(0.90))
+                    .overlay(RoundedRectangle(cornerRadius: 5).stroke(mc.opacity(0.15), lineWidth: 1))
+                    .frame(width: 30, height: 20)
+                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
+            }
+        }
+        .animation(.easeOut(duration: 0.25), value: shown)
+        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in shown.toggle() }}
+    }
+}
+
+private struct MiniSymbol: View {
+    @State private var trigger = 0
+    var body: some View {
+        Group {
+            if #available(macOS 14.0, *) {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(mc.opacity(0.35))
+                    .symbolEffect(.bounce, value: trigger)
+            } else {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(mc.opacity(0.35))
+                    .scaleEffect(trigger % 2 == 1 ? 1.3 : 1.0)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.55), value: trigger)
+            }
+        }
+        .onAppear { Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { _ in trigger += 1 }}
     }
 }
 
