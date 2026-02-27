@@ -13,6 +13,13 @@ extension Color {
     static let divider       = Color(red: 0.88, green: 0.86, blue: 0.83)
 }
 
+// MARK: - Sidebar width preference
+
+private struct SidebarWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 300
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
+}
+
 // MARK: - Root
 
 struct ContentView: View {
@@ -28,10 +35,11 @@ struct ContentView: View {
                 selectedItem: $selectedItem
             )
             .frame(minWidth: 260, idealWidth: 300, maxWidth: 380)
+            .background(GeometryReader { geo in
+                Color.clear.preference(key: SidebarWidthKey.self, value: geo.size.width)
+            })
 
-            Rectangle()
-                .frame(width: 1)
-                .foregroundStyle(Color.divider)
+            Color.clear.frame(width: 1)   // placeholder keeps spacing
 
             Group {
                 if let item = selectedItem {
@@ -42,10 +50,11 @@ struct ContentView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .safeAreaPadding(.top)
         }
-        .ignoresSafeArea(edges: .top)
         .background(Color.appBg.ignoresSafeArea())
+        .backgroundPreferenceValue(SidebarWidthKey.self) { sidebarWidth in
+            DividerLineView(x: sidebarWidth)
+        }
         .preferredColorScheme(.light)
         .toolbarBackground(Color.appBg, for: .windowToolbar)
         .background(WindowAccessor())
@@ -200,7 +209,6 @@ private struct SidebarView: View {
                 }
             }
         } // VStack
-        .safeAreaPadding(.top)
     }
 }
 
@@ -221,6 +229,52 @@ private struct EmptyDetailPlaceholder: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.appBg)
+    }
+}
+
+// MARK: - Full-height divider line (bypasses SwiftUI safe area)
+
+private struct DividerLineView: NSViewRepresentable {
+    let x: CGFloat
+
+    func makeNSView(context: Context) -> DividerNSView {
+        DividerNSView(x: x)
+    }
+    func updateNSView(_ nsView: DividerNSView, context: Context) {
+        nsView.updateX(x)
+    }
+
+    class DividerNSView: NSView {
+        private var divider: NSView?
+        private var targetX: CGFloat
+
+        init(x: CGFloat) {
+            self.targetX = x
+            super.init(frame: .zero)
+        }
+        required init?(coder: NSCoder) { fatalError() }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            guard let window, divider == nil else { return }
+            placeDivider(in: window)
+        }
+
+        func updateX(_ x: CGFloat) {
+            targetX = x
+            divider?.frame.origin.x = x
+        }
+
+        private func placeDivider(in window: NSWindow) {
+            guard let contentView = window.contentView else { return }
+            let line = NSView()
+            line.wantsLayer = true
+            line.layer?.backgroundColor = NSColor(red: 0.88, green: 0.86, blue: 0.83, alpha: 1).cgColor
+            line.frame = CGRect(x: targetX, y: 0, width: 1, height: contentView.bounds.height)
+            line.autoresizingMask = [.height]
+            contentView.addSubview(line)
+            divider = line
+        }
     }
 }
 
