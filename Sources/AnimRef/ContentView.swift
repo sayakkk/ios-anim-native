@@ -31,7 +31,7 @@ struct ContentView: View {
 
             Rectangle()
                 .frame(width: 1)
-                .foregroundStyle(Color(red: 0.55, green: 0.53, blue: 0.51))
+                .foregroundStyle(Color.divider)
 
             Group {
                 if let item = selectedItem {
@@ -44,6 +44,11 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(Color.appBg.ignoresSafeArea())
+        .safeAreaInset(edge: .top, spacing: 0) {
+            Rectangle()
+                .frame(height: 1)
+                .foregroundStyle(Color.divider)
+        }
         .preferredColorScheme(.light)
         .toolbarBackground(Color.appBg, for: .windowToolbar)
         .background(WindowAccessor())
@@ -131,7 +136,9 @@ private struct SidebarView: View {
                 }
                 .padding(.horizontal, 14)
             }
-            .padding(.bottom, 10)
+            .padding(.bottom, 8)
+
+            Color.divider.frame(height: 1)
 
             // ── Card grid ────────────────────────────────────────────
             ScrollView {
