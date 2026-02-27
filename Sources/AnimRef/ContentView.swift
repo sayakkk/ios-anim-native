@@ -245,7 +245,6 @@ private struct DividerLineView: NSViewRepresentable {
     }
 
     class DividerNSView: NSView {
-        private var divider: NSView?
         private var targetX: CGFloat
 
         init(x: CGFloat) {
@@ -256,24 +255,33 @@ private struct DividerLineView: NSViewRepresentable {
 
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
-            guard let window, divider == nil else { return }
-            placeDivider(in: window)
+            guard let window else { return }
+            DispatchQueue.main.async { [weak self] in
+                self?.placeDivider(in: window)
+            }
+        }
+
+        private weak var dividerLayer: CALayer?
+
+        private func placeDivider(in window: NSWindow) {
+            guard let contentView = window.contentView else { return }
+            dividerLayer?.removeFromSuperlayer()
+            contentView.wantsLayer = true
+            guard let rootLayer = contentView.layer else { return }
+
+            let h = window.frame.height
+            let layer = CALayer()
+            layer.frame = CGRect(x: targetX, y: 0, width: 1.5, height: h)
+            layer.backgroundColor = NSColor(srgbRed: 0.40, green: 0.38, blue: 0.36, alpha: 1).cgColor
+            layer.zPosition = 1000
+            layer.autoresizingMask = [.layerHeightSizable]
+            rootLayer.addSublayer(layer)
+            dividerLayer = layer
         }
 
         func updateX(_ x: CGFloat) {
             targetX = x
-            divider?.frame.origin.x = x
-        }
-
-        private func placeDivider(in window: NSWindow) {
-            guard let contentView = window.contentView else { return }
-            let h = window.frame.height          // full window height incl. titlebar
-            let line = NSView(frame: CGRect(x: targetX, y: 0, width: 1, height: h))
-            line.wantsLayer = true
-            line.layer?.backgroundColor = NSColor(red: 0.72, green: 0.70, blue: 0.67, alpha: 1).cgColor
-            line.autoresizingMask = [.height]
-            contentView.addSubview(line)
-            divider = line
+            dividerLayer?.frame.origin.x = x
         }
     }
 }
