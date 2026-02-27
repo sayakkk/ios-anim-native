@@ -26,6 +26,7 @@ struct ContentView: View {
     @State private var search        = ""
     @State private var activeCategory = "전체"
     @State private var selectedItem: AnimationItem? = nil
+    @State private var sidebarWidth: CGFloat = 300
 
     var body: some View {
         HStack(spacing: 0) {
@@ -39,7 +40,7 @@ struct ContentView: View {
                 Color.clear.preference(key: SidebarWidthKey.self, value: geo.size.width)
             })
 
-            Color.clear.frame(width: 1)   // placeholder keeps spacing
+            Color.clear.frame(width: 1)   // placeholder gap
 
             Group {
                 if let item = selectedItem {
@@ -52,9 +53,8 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(Color.appBg.ignoresSafeArea())
-        .backgroundPreferenceValue(SidebarWidthKey.self) { sidebarWidth in
-            DividerLineView(x: sidebarWidth)
-        }
+        .onPreferenceChange(SidebarWidthKey.self) { sidebarWidth = $0 }
+        .overlay { DividerLineView(x: sidebarWidth).allowsHitTesting(false) }
         .preferredColorScheme(.light)
         .toolbarBackground(Color.appBg, for: .windowToolbar)
         .background(WindowAccessor())
@@ -267,10 +267,10 @@ private struct DividerLineView: NSViewRepresentable {
 
         private func placeDivider(in window: NSWindow) {
             guard let contentView = window.contentView else { return }
-            let line = NSView()
+            let h = window.frame.height          // full window height incl. titlebar
+            let line = NSView(frame: CGRect(x: targetX, y: 0, width: 1, height: h))
             line.wantsLayer = true
             line.layer?.backgroundColor = NSColor(red: 0.88, green: 0.86, blue: 0.83, alpha: 1).cgColor
-            line.frame = CGRect(x: targetX, y: 0, width: 1, height: contentView.bounds.height)
             line.autoresizingMask = [.height]
             contentView.addSubview(line)
             divider = line
