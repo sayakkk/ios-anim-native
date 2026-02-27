@@ -12,6 +12,7 @@ struct DetailPanelView: View {
     @State private var selectedExample: RealAppExample? = nil
     @State private var propertyValues: [String: Double] = [:]
     @State private var previewTrigger   = UUID()
+    @State private var includeSwiftUI   = true
 
     private var interactive: [AnimProperty] { item.properties.filter(\.isInteractive) }
     private var infoOnly:    [AnimProperty] { item.properties.filter { !$0.isInteractive } }
@@ -109,39 +110,66 @@ struct DetailPanelView: View {
                 .padding(.horizontal, 22)
                 .padding(.top, 18)
 
-                // ── 실시간 AI 프롬프트 (클릭하면 복사) ──────────────
-                Button {
-                    copyToClipboard(buildDynamicPrompt())
-                    withAnimation(.spring(response: 0.25, dampingFraction: 0.65)) { copiedPrompt = true }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        withAnimation { copiedPrompt = false }
-                    }
-                } label: {
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text("실시간 AI 프롬프트")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(Color.textTertiary)
-                                .kerning(0.8)
-                                .textCase(.uppercase)
-                            Spacer()
+                // ── 실시간 AI 프롬프트 ──────────────────────────────
+                VStack(alignment: .leading, spacing: 6) {
+                    // 헤더: 레이블 + SwiftUI 토글 + 복사 아이콘
+                    HStack(spacing: 6) {
+                        Text("실시간 AI 프롬프트")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Color.textTertiary)
+                            .kerning(0.8)
+                            .textCase(.uppercase)
+                        Spacer()
+                        // SwiftUI 토글 캡슐
+                        Button {
+                            withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
+                                includeSwiftUI.toggle()
+                            }
+                        } label: {
+                            Text("SwiftUI")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(includeSwiftUI ? Color.white : Color.textTertiary)
+                                .padding(.horizontal, 7).padding(.vertical, 3)
+                                .background(includeSwiftUI ? Color.chipActive : Color.clear)
+                                .clipShape(Capsule())
+                                .overlay(Capsule().stroke(
+                                    includeSwiftUI ? Color.clear : Color.cardBorder, lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                        // 복사 버튼
+                        Button {
+                            copyToClipboard(buildDynamicPrompt())
+                            withAnimation(.spring(response: 0.25, dampingFraction: 0.65)) { copiedPrompt = true }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                withAnimation { copiedPrompt = false }
+                            }
+                        } label: {
                             Image(systemName: copiedPrompt ? "checkmark" : "doc.on.doc")
                                 .font(.system(size: 10, weight: .semibold))
                                 .foregroundStyle(copiedPrompt ? Color.textPrimary : Color.textTertiary)
                                 .scaleEffect(copiedPrompt ? 0.9 : 1.0)
                                 .animation(.spring(response: 0.25, dampingFraction: 0.65), value: copiedPrompt)
                         }
-                        coloredPromptText(buildDynamicPrompt())
-                            .lineSpacing(4)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        .buttonStyle(.plain)
                     }
-                    .padding(12)
-                    .background(copiedPrompt ? Color.textPrimary.opacity(0.04) : Color.white.opacity(0.7))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(
-                        copiedPrompt ? Color.textPrimary.opacity(0.25) : Color.cardBorder, lineWidth: 1))
+                    // 프롬프트 텍스트 (탭해도 복사)
+                    coloredPromptText(buildDynamicPrompt())
+                        .lineSpacing(4)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            copyToClipboard(buildDynamicPrompt())
+                            withAnimation(.spring(response: 0.25, dampingFraction: 0.65)) { copiedPrompt = true }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                withAnimation { copiedPrompt = false }
+                            }
+                        }
                 }
-                .buttonStyle(.plain)
+                .padding(12)
+                .background(copiedPrompt ? Color.textPrimary.opacity(0.04) : Color.white.opacity(0.7))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(
+                    copiedPrompt ? Color.textPrimary.opacity(0.25) : Color.cardBorder, lineWidth: 1))
                 .padding(.horizontal, 22)
                 .padding(.top, 10)
                 Text("[적용할 대상]에 원하는 뷰/컴포넌트 이름을 넣으세요.")
@@ -332,6 +360,13 @@ struct DetailPanelView: View {
                 let on = (propertyValues[key] ?? 0) > 0.5
                 result = result.replacingOccurrences(of: "{\(key)}", with: on ? "true" : "false")
             }
+        }
+        // 4. SwiftUI 제거 (토글 off 시)
+        if !includeSwiftUI {
+            result = result
+                .replacingOccurrences(of: "SwiftUI ", with: "")
+                .replacingOccurrences(of: " SwiftUI", with: "")
+                .replacingOccurrences(of: "SwiftUI", with: "")
         }
         return result
     }
