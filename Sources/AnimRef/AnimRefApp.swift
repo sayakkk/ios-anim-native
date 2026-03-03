@@ -7,7 +7,6 @@ struct AnimRefApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environment(\.appLang, appLang)
                 .preferredColorScheme(.light)
         }
         .defaultSize(width: 1120, height: 740)
