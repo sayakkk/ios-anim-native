@@ -61,11 +61,16 @@ private struct SidebarView: View {
     @Binding var search: String
     @Binding var activeCategory: String
     @Binding var selectedItem: AnimationItem?
+    @AppStorage("appLang") private var appLang = "ko"
 
     private let categories = [
         "전체", "👆 버튼·탭 반응", "📱 화면 전환", "📋 리스트·등장",
         "⏳ 로딩·대기", "🔔 알림·피드백", "🔄 반복 효과", "✋ 제스처", "⚙️ 타이밍"
     ]
+
+    private func catLabel(_ cat: String) -> String {
+        appLang == "en" ? (categoryEn[cat] ?? cat) : cat
+    }
 
     private func filtered(_ items: [AnimationItem]) -> [AnimationItem] {
         items.filter { item in
@@ -76,7 +81,9 @@ private struct SidebarView: View {
                 item.name.lowercased().contains(q) ||
                 item.feel.lowercased().contains(q) ||
                 item.feelDesc.lowercased().contains(q) ||
-                item.when.lowercased().contains(q)
+                item.when.lowercased().contains(q) ||
+                (item.en?.feel.lowercased().contains(q) ?? false) ||
+                (item.en?.when.lowercased().contains(q) ?? false)
             return matchCat && matchSearch
         }
     }
@@ -87,28 +94,46 @@ private struct SidebarView: View {
     var body: some View {
         VStack(spacing: 0) {
 
-            // ── Search ─────────────────────────────────────────────
-            HStack(spacing: 7) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.textTertiary)
-                TextField("Spring, Shake, 슬라이드...", text: $search)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color.textPrimary)
-                if !search.isEmpty {
-                    Button { search = "" } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 11))
-                            .foregroundStyle(Color.textTertiary)
+            // ── Search + Language toggle ────────────────────────────
+            HStack(spacing: 8) {
+                HStack(spacing: 7) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color.textTertiary)
+                    TextField(appLang == "en" ? "Spring, Shake, Slide..." : "Spring, Shake, 슬라이드...", text: $search)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.textPrimary)
+                    if !search.isEmpty {
+                        Button { search = "" } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color.textTertiary)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(Color.black.opacity(0.05))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                // KO / EN 토글
+                Button {
+                    withAnimation(.spring(response: 0.22, dampingFraction: 0.72)) {
+                        appLang = appLang == "ko" ? "en" : "ko"
+                    }
+                } label: {
+                    Text(appLang == "ko" ? "EN" : "한")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Color.textSecondary)
+                        .frame(width: 30, height: 30)
+                        .background(Color.black.opacity(0.05))
+                        .clipShape(RoundedRectangle(cornerRadius: 7))
+                }
+                .buttonStyle(.plain)
+                .help(appLang == "ko" ? "Switch to English" : "한국어로 전환")
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(Color.black.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
             .padding(.horizontal, 14)
             .padding(.top, 12)
             .padding(.bottom, 10)
@@ -122,7 +147,7 @@ private struct SidebarView: View {
                                 activeCategory = cat
                             }
                         } label: {
-                            Text(cat)
+                            Text(catLabel(cat))
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(activeCategory == cat ? Color.white : Color.textSecondary)
                                 .padding(.horizontal, 11).padding(.vertical, 6)
@@ -145,7 +170,7 @@ private struct SidebarView: View {
                 VStack(alignment: .leading, spacing: 0) {
 
                     if !filteredBasics.isEmpty {
-                        SectionHeader(title: "기본", subtitle: "SwiftUI Animation Types")
+                        SectionHeader(title: appLang == "en" ? "Basic" : "기본", subtitle: "SwiftUI Animation Types")
                             .padding(.horizontal, 14)
                             .padding(.top, 16)
                             .padding(.bottom, 10)
@@ -170,7 +195,7 @@ private struct SidebarView: View {
                     }
 
                     if !filteredCombos.isEmpty {
-                        SectionHeader(title: "조합", subtitle: "Combined Effects")
+                        SectionHeader(title: appLang == "en" ? "Combo" : "조합", subtitle: "Combined Effects")
                             .padding(.horizontal, 14)
                             .padding(.bottom, 10)
 
@@ -195,7 +220,7 @@ private struct SidebarView: View {
                             Image(systemName: "magnifyingglass")
                                 .font(.system(size: 22))
                                 .foregroundStyle(Color.textTertiary)
-                            Text("결과 없음")
+                            Text(appLang == "en" ? "No results" : "결과 없음")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundStyle(Color.textSecondary)
                         }
@@ -211,15 +236,16 @@ private struct SidebarView: View {
 // MARK: - Empty state
 
 private struct EmptyDetailPlaceholder: View {
+    @AppStorage("appLang") private var appLang = "ko"
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: "cursorarrow.click")
                 .font(.system(size: 36))
                 .foregroundStyle(Color.textTertiary)
-            Text("왼쪽에서 애니메이션을 선택하세요")
+            Text(appLang == "en" ? "Select an animation" : "왼쪽에서 애니메이션을 선택하세요")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(Color.textSecondary)
-            Text("클릭하면 데모와 코드가 여기에 나타납니다")
+            Text(appLang == "en" ? "Demo and code will appear here" : "클릭하면 데모와 코드가 여기에 나타납니다")
                 .font(.system(size: 13))
                 .foregroundStyle(Color.textTertiary)
         }

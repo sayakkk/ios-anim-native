@@ -13,6 +13,7 @@ struct DetailPanelView: View {
     @State private var propertyValues: [String: Double] = [:]
     @State private var previewTrigger   = UUID()
     @State private var includeSwiftUI   = true
+    @AppStorage("appLang") private var appLang = "ko"
 
     private var interactive: [AnimProperty] { item.properties.filter(\.isInteractive) }
     private var infoOnly:    [AnimProperty] { item.properties.filter { !$0.isInteractive } }
@@ -114,7 +115,7 @@ struct DetailPanelView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     // 헤더: 레이블 + SwiftUI 토글 + 복사 아이콘
                     HStack(spacing: 6) {
-                        Text("실시간 AI 프롬프트")
+                        Text(appLang == "en" ? "Live AI Prompt" : "실시간 AI 프롬프트")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundStyle(Color.textTertiary)
                             .kerning(0.8)
@@ -172,7 +173,7 @@ struct DetailPanelView: View {
                     copiedPrompt ? Color.textPrimary.opacity(0.25) : Color.cardBorder, lineWidth: 1))
                 .padding(.horizontal, 22)
                 .padding(.top, 10)
-                Text("[적용할 대상]에 원하는 뷰/컴포넌트 이름을 넣으세요.")
+                Text(appLang == "en" ? "Replace [target] with your view or component name." : "[적용할 대상]에 원하는 뷰/컴포넌트 이름을 넣으세요.")
                     .font(.system(size: 10))
                     .foregroundStyle(Color.textTertiary.opacity(0.7))
                     .padding(.horizontal, 26)
@@ -183,10 +184,10 @@ struct DetailPanelView: View {
                     Text(item.name)
                         .font(.system(size: 28, weight: .black))
                         .foregroundStyle(Color.textPrimary)
-                    Text(item.feel)
+                    Text(item.localFeel(appLang))
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.textSecondary)
-                    Text(item.feelDesc)
+                    Text(item.localFeelDesc(appLang))
                         .font(.system(size: 13))
                         .foregroundStyle(Color.textTertiary)
                         .lineSpacing(5)
@@ -203,14 +204,14 @@ struct DetailPanelView: View {
                 // ── Content sections ──────────────────────────────────
                 VStack(alignment: .leading, spacing: 26) {
 
-                    ContentSection(title: "언제 써요?") {
-                        Text(item.when)
+                    ContentSection(title: appLang == "en" ? "When to use" : "언제 써요?") {
+                        Text(item.localWhen(appLang))
                             .font(.system(size: 14))
                             .foregroundStyle(Color.textSecondary)
                             .lineSpacing(5)
                     }
 
-                    ContentSection(title: "실제 앱에서 보면") {
+                    ContentSection(title: appLang == "en" ? "Real app examples" : "실제 앱에서 보면") {
                         VStack(alignment: .leading, spacing: 12) {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(alignment: .top, spacing: 10) {
@@ -229,7 +230,7 @@ struct DetailPanelView: View {
                             }
                             if let ex = selectedExample {
                                 VStack(alignment: .leading, spacing: 10) {
-                                    Text("[\(ex.name)] 실제로 쓰이는 값")
+                                    Text(appLang == "en" ? "[\(ex.name)] actual values" : "[\(ex.name)] 실제로 쓰이는 값")
                                         .font(.system(size: 10, weight: .bold))
                                         .foregroundStyle(Color.textTertiary)
                                         .textCase(.uppercase).kerning(0.8)
@@ -253,7 +254,7 @@ struct DetailPanelView: View {
                     }
 
                     if !infoOnly.isEmpty {
-                        ContentSection(title: "세부조절 옵션") {
+                        ContentSection(title: appLang == "en" ? "Parameters" : "세부조절 옵션") {
                             VStack(spacing: 0) {
                                 ForEach(infoOnly, id: \.key) { PropRow(prop: $0) }
                             }
@@ -267,7 +268,9 @@ struct DetailPanelView: View {
                             HStack(spacing: 5) {
                                 Image(systemName: showCode ? "chevron.down" : "chevron.right")
                                     .font(.system(size: 10, weight: .semibold))
-                                Text(showCode ? "코드 접기" : "SwiftUI 코드 보기")
+                                Text(showCode
+                                     ? (appLang == "en" ? "Hide code" : "코드 접기")
+                                     : (appLang == "en" ? "SwiftUI code" : "SwiftUI 코드 보기"))
                                     .font(.system(size: 13, weight: .medium))
                             }
                             .foregroundStyle(Color.textTertiary)
@@ -291,7 +294,7 @@ struct DetailPanelView: View {
                                         withAnimation { copiedCode = false }
                                     }
                                 } label: {
-                                    Label(copiedCode ? "복사됨 ✓" : "코드 복사",
+                                    Label(copiedCode ? (appLang == "en" ? "Copied ✓" : "복사됨 ✓") : (appLang == "en" ? "Copy code" : "코드 복사"),
                                           systemImage: copiedCode ? "checkmark" : "doc.on.doc")
                                         .font(.system(size: 12, weight: .semibold))
                                         .foregroundStyle(Color.textSecondary)
@@ -337,7 +340,7 @@ struct DetailPanelView: View {
     }
 
     private func buildDynamicPrompt() -> String {
-        var result = item.prompt
+        var result = item.localPrompt(appLang)
         // 1. Sliders: replace [number] placeholders in order
         for prop in interactive where prop.isSlider {
             guard let key = prop.paramKey, let val = propertyValues[key] else { continue }
@@ -410,11 +413,12 @@ private struct SliderRow: View {
     let prop: AnimProperty
     @Binding var value: Double
     var onEditEnd: () -> Void = {}
+    @AppStorage("appLang") private var appLang = "ko"
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .center) {
-                Text(prop.label)
+                Text(prop.localLabel(appLang))
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.textPrimary)
                 Text(prop.key)
@@ -460,11 +464,12 @@ private struct PickerRow: View {
     let prop: AnimProperty
     @Binding var selectedValue: Double
     let options: [(label: String, value: Double)]
+    @AppStorage("appLang") private var appLang = "ko"
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(prop.label)
+                Text(prop.localLabel(appLang))
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color.textPrimary)
                 Text(prop.key)
@@ -501,12 +506,13 @@ private struct PickerRow: View {
 private struct ToggleRow: View {
     let prop: AnimProperty
     @Binding var isOn: Bool
+    @AppStorage("appLang") private var appLang = "ko"
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 3) {
                 HStack {
-                    Text(prop.label)
+                    Text(prop.localLabel(appLang))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(Color.textPrimary)
                     Text(prop.key)
@@ -655,7 +661,8 @@ struct InteractiveDemoView: View {
                 case "flip":
                     LiveFlipDemo(
                         flipAxis: values["flipAxis"] ?? 0,
-                        response: values["response"] ?? 0.5
+                        response: values["response"] ?? 0.5,
+                        flipAnchor: values["flipAnchor"] ?? 0
                     )
                 case "blur-reveal":
                     LiveBlurRevealDemo(
@@ -913,7 +920,12 @@ private struct LiveWaveDemo: View {
             ForEach(0..<5, id: \.self) { i in
                 RoundedRectangle(cornerRadius: 2)
                     .stroke(liveInk, lineWidth: liveSW)
-                    .frame(width: 6, height: animating ? maxHeight : 8)
+                    .frame(width: 6, height: maxHeight)          // 항상 최대 높이
+                    .scaleEffect(
+                        x: 1,
+                        y: animating ? 1.0 : 8 / maxHeight,      // 중앙 기준 축소
+                        anchor: .center
+                    )
                     .animation(
                         .easeInOut(duration: 0.44)
                             .repeatForever(autoreverses: true)
@@ -932,6 +944,8 @@ private struct LivePopInDemo: View {
     @State private var show = false
     var body: some View {
         ZStack {
+            // 위치 고정용 투명 플레이스홀더
+            liveCircle().opacity(0)
             if show {
                 liveCircle()
                     .transition(.scale(scale: startScale).combined(with: .opacity))
@@ -951,18 +965,40 @@ private struct LivePopInDemo: View {
 private struct LiveRubberBandDemo: View {
     let resistanceFactor: Double
     let dampingFraction: Double
-    @State private var offset: CGFloat = 0
+    @State private var stretch: CGFloat = 0  // 늘어난 길이
+
+    private let baseLineH: CGFloat = 24
+
     var body: some View {
         VStack(spacing: 0) {
-            Rectangle().fill(liveInkLight).frame(width: liveSW, height: 30)
-            liveCircle().offset(y: offset)
+            // ── 위쪽 고정 연결부 ──────────────────────────
+            ZStack {
+                // 가로 연결 막대
+                Capsule()
+                    .fill(liveInk.opacity(0.35))
+                    .frame(width: 26, height: 3)
+                // 아래로 뻗는 짧은 수직선
+                Rectangle()
+                    .fill(liveInk.opacity(0.25))
+                    .frame(width: liveSW, height: 7)
+                    .offset(y: 5)
+            }
+            .frame(height: 10)
+
+            // ── 늘어나는 라인 ──────────────────────────────
+            Rectangle()
+                .fill(liveInkLight)
+                .frame(width: liveSW, height: baseLineH + stretch)
+
+            // ── 원 (라인 끝에 붙어 있음) ──────────────────
+            liveCircle()
         }
         .onAppear {
             func snap() {
-                let pull = 32.0 / resistanceFactor * 3
-                withAnimation(.linear(duration: 0.5)) { offset = pull }
+                let pull: CGFloat = CGFloat(32.0 / resistanceFactor * 2.5)
+                withAnimation(.linear(duration: 0.5)) { stretch = pull }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.52) {
-                    withAnimation(.spring(response: 0.38, dampingFraction: dampingFraction)) { offset = 0 }
+                    withAnimation(.spring(response: 0.38, dampingFraction: dampingFraction)) { stretch = 0 }
                 }
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { snap() }
@@ -977,33 +1013,29 @@ private struct LiveHeroDemo: View {
     @State private var expanded = false
 
     var body: some View {
-        ZStack {
-            // 배경 카드 (작은 상태)
-            if !expanded {
-                RoundedRectangle(cornerRadius: 14)
+        // 단일 카드만 유지 — if/else 분기 없이 크기/모양만 애니메이션
+        RoundedRectangle(cornerRadius: expanded ? 22 : 12)
+            .fill(liveInk.opacity(expanded ? 0.06 : 0))
+            .overlay(
+                RoundedRectangle(cornerRadius: expanded ? 22 : 12)
                     .stroke(liveInk, lineWidth: liveSW)
-                    .frame(width: 80, height: 54)
-                    .transition(.identity)
-            }
-            // Hero 카드 (expanded)
-            RoundedRectangle(cornerRadius: expanded ? 22 : 14)
-                .stroke(liveInk, lineWidth: expanded ? liveSW * 1.2 : liveSW)
-                .frame(
-                    width:  expanded ? 160 : 80,
-                    height: expanded ? 108 : 54
-                )
-                .overlay(
-                    VStack(spacing: 5) {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(liveInk.opacity(0.18))
-                            .frame(width: expanded ? 80 : 38, height: expanded ? 7 : 5)
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(liveInk.opacity(0.10))
-                            .frame(width: expanded ? 54 : 26, height: expanded ? 5 : 4)
-                    }
-                )
+            )
+            .frame(
+                width:  expanded ? 170 : 76,
+                height: expanded ? 110 : 50
+            )
+            .overlay(
+                VStack(spacing: expanded ? 6 : 4) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(liveInk.opacity(0.18))
+                        .frame(width: expanded ? 90 : 36, height: expanded ? 7 : 4)
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(liveInk.opacity(0.10))
+                        .frame(width: expanded ? 60 : 24, height: expanded ? 5 : 3)
+                }
                 .animation(.spring(response: response, dampingFraction: dampingFraction), value: expanded)
-        }
+            )
+            .animation(.spring(response: response, dampingFraction: dampingFraction), value: expanded)
         .onAppear {
             func cycle() {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { expanded = true }
@@ -1016,48 +1048,49 @@ private struct LiveHeroDemo: View {
 }
 
 private struct LiveFlipDemo: View {
-    let flipAxis: Double   // 0=Y축, 1=X축
+    let flipAxis: Double    // 0=Y축, 1=X축
     let response: Double
+    var flipAnchor: Double = 0  // 0=중앙, 1=왼쪽, 2=오른쪽
     @State private var flipped = false
 
-    private var axis: (CGFloat, CGFloat, CGFloat) {
-        flipAxis < 0.5 ? (0, 1, 0) : (1, 0, 0)
+    private var axis: (CGFloat, CGFloat, CGFloat) { flipAxis < 0.5 ? (0, 1, 0) : (1, 0, 0) }
+    private var anchor: UnitPoint {
+        switch Int(flipAnchor) {
+        case 1: return .leading
+        case 2: return .trailing
+        default: return .center
+        }
     }
 
     var body: some View {
         ZStack {
             // 앞면
             RoundedRectangle(cornerRadius: 10)
-                .stroke(liveInk, lineWidth: liveSW)
-                .frame(width: 72, height: 46)
+                .fill(Color.white)
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(liveInk, lineWidth: liveSW))
+                .frame(width: 76, height: 48)
                 .overlay(
-                    HStack(spacing: 3) {
-                        ForEach(0..<3, id: \.self) { _ in
-                            RoundedRectangle(cornerRadius: 2).fill(liveInk.opacity(0.20)).frame(width: 12, height: 4)
-                        }
-                    }
+                    Text("Front")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(liveInk.opacity(0.45))
                 )
                 .opacity(flipped ? 0 : 1)
-            // 뒷면
+
+            // 뒷면 — 같은 축으로 180° 반전해야 읽힘
             RoundedRectangle(cornerRadius: 10)
-                .fill(liveInk.opacity(0.07))
-                .stroke(liveInk.opacity(0.55), lineWidth: liveSW)
-                .frame(width: 72, height: 46)
+                .fill(liveInk.opacity(0.08))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(liveInk.opacity(0.55), lineWidth: liveSW))
+                .frame(width: 76, height: 48)
                 .overlay(
-                    Text("뒷면")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(liveInk.opacity(0.40))
+                    Text("Back")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(liveInk.opacity(0.45))
+                        // 뒷면 텍스트가 거울반전 안 되도록 같은 축으로 보정
+                        .rotation3DEffect(.degrees(180), axis: axis)
                 )
                 .opacity(flipped ? 1 : 0)
-                .rotation3DEffect(
-                    .degrees(flipAxis < 0.5 ? 180 : 0),
-                    axis: (1, 0, 0)
-                )
         }
-        .rotation3DEffect(
-            .degrees(flipped ? 180 : 0),
-            axis: axis
-        )
+        .rotation3DEffect(.degrees(flipped ? 180 : 0), axis: axis, anchor: anchor)
         .animation(.spring(response: response, dampingFraction: 0.80), value: flipped)
         .onAppear {
             func cycle() {
@@ -1076,42 +1109,43 @@ private struct LiveBlurRevealDemo: View {
     @State private var modalShown = false
 
     var body: some View {
+        // 고정 크기 캔버스 — ZStack 크기 변동 없음
         ZStack {
-            // 배경 콘텐츠
-            VStack(spacing: 5) {
-                ForEach(0..<3, id: \.self) { i in
+            // ── 배경 (항상 존재, blur 애니메이션만) ──
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(0..<4, id: \.self) { i in
                     RoundedRectangle(cornerRadius: 3)
-                        .fill(liveInk.opacity(0.12))
-                        .frame(width: CGFloat(54 - i * 6), height: 6)
+                        .fill(liveInk.opacity(0.13))
+                        .frame(width: CGFloat([64, 52, 58, 44][i]), height: 7)
                 }
             }
-            .blur(radius: modalShown ? blurRadius * 0.12 : 0)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .padding(.leading, 18)
+            .blur(radius: modalShown ? blurRadius * 0.10 : 0)
+            .scaleEffect(modalShown ? 0.95 : 1.0, anchor: .center)
             .animation(.easeOut(duration: fadeDuration), value: modalShown)
 
-            // 모달 패널
-            if modalShown {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.white.opacity(0.94))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(liveInk.opacity(0.12), lineWidth: 1)
-                    )
-                    .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 3)
-                    .frame(width: 88, height: 54)
-                    .overlay(
-                        VStack(spacing: 5) {
-                            RoundedRectangle(cornerRadius: 2).fill(liveInk.opacity(0.20)).frame(width: 42, height: 4)
-                            RoundedRectangle(cornerRadius: 2).fill(liveInk.opacity(0.10)).frame(width: 30, height: 4)
-                        }
-                    )
-                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
-            }
+            // ── 모달 패널 (opacity + scale, 위치 고정) ──
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white)
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(liveInk.opacity(0.10), lineWidth: 1))
+                .shadow(color: .black.opacity(0.09), radius: 10, x: 0, y: 4)
+                .frame(width: 100, height: 62)
+                .overlay(
+                    VStack(spacing: 6) {
+                        RoundedRectangle(cornerRadius: 2).fill(liveInk.opacity(0.20)).frame(width: 50, height: 5)
+                        RoundedRectangle(cornerRadius: 2).fill(liveInk.opacity(0.11)).frame(width: 36, height: 4)
+                    }
+                )
+                .opacity(modalShown ? 1 : 0)
+                .scaleEffect(modalShown ? 1.0 : 0.88, anchor: .center)
+                .animation(.spring(response: 0.35, dampingFraction: 0.85), value: modalShown)
         }
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: modalShown)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             func cycle() {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { modalShown = true }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { modalShown = false }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { modalShown = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.9) { modalShown = false }
             }
             cycle()
             Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in cycle() }
@@ -1160,13 +1194,16 @@ private struct LiveSymbolEffectDemo: View {
     let effectKind: Double
 
     var body: some View {
-        if #available(macOS 14.0, *) {
-            LiveSymbolEffectInner(effectKind: effectKind)
-        } else {
-            Image(systemName: "star.fill")
-                .font(.system(size: 32))
-                .foregroundStyle(liveInk.opacity(0.30))
+        Group {
+            if #available(macOS 14.0, *) {
+                LiveSymbolEffectInner(effectKind: effectKind)
+            } else {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(liveInk.opacity(0.30))
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

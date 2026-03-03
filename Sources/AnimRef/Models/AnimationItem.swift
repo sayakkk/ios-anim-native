@@ -4,6 +4,15 @@ import SwiftUI
 
 enum AnimKind { case basic, combo }
 
+// MARK: - Localization
+
+struct AnimationLocale {
+    let feel: String
+    let feelDesc: String
+    let when: String
+    let prompt: String
+}
+
 // MARK: - Prop Kind
 
 enum PropKind {
@@ -58,6 +67,12 @@ struct AnimationItem: Identifiable {
     let properties: [AnimProperty]
     let swiftui: String
     let prompt: String
+    var en: AnimationLocale? = nil
+
+    func localFeel(_ lang: String)     -> String { lang == "en" ? en?.feel     ?? feel     : feel     }
+    func localFeelDesc(_ lang: String) -> String { lang == "en" ? en?.feelDesc ?? feelDesc : feelDesc }
+    func localWhen(_ lang: String)     -> String { lang == "en" ? en?.when     ?? when     : when     }
+    func localPrompt(_ lang: String)   -> String { lang == "en" ? en?.prompt   ?? prompt   : prompt   }
 }
 
 // MARK: - Seed Data
@@ -128,7 +143,13 @@ struct AnimationData {
     value: state
 )
 """,
-            prompt: "SwiftUI [적용할 대상]의 변화에 spring 애니메이션을 적용해줘. response [0.4], dampingFraction [0.7]로."
+            prompt: "SwiftUI [적용할 대상]의 변화에 spring 애니메이션을 적용해줘. response [0.4], dampingFraction [0.7]로.",
+            en: AnimationLocale(
+                feel: "Bouncy, snappy settlement",
+                feelDesc: "The lively elasticity felt throughout iOS — always natural, always alive",
+                when: "Everywhere. The foundational animation in iOS apps",
+                prompt: "Apply a spring animation to [target] in SwiftUI. response [0.4], dampingFraction [0.7]."
+            )
         ),
 
         AnimationItem(
@@ -172,7 +193,13 @@ struct AnimationData {
     value: isExpanded
 )
 """,
-            prompt: "SwiftUI [적용할 대상]에 .bouncy 애니메이션을 적용해서 고무공처럼 통통 튀는 느낌을 줘. extraBounce [0.25]로."
+            prompt: "SwiftUI [적용할 대상]에 .bouncy 애니메이션을 적용해서 고무공처럼 통통 튀는 느낌을 줘. extraBounce [0.25]로.",
+            en: AnimationLocale(
+                feel: "Like a rubber ball bouncing repeatedly",
+                feelDesc: "More exaggerated than spring — playful and full of energy",
+                when: "Popup appearance, button rebound after tap",
+                prompt: "Apply .bouncy animation to [target] in SwiftUI. extraBounce [0.25]."
+            )
         ),
 
         AnimationItem(
@@ -220,7 +247,13 @@ SomeView()
     .opacity(isVisible ? 1 : 0)
     .animation(.easeInOut(duration: 0.3), value: isVisible)
 """,
-            prompt: "SwiftUI [적용할 대상]가 {fadeDirection} fade 애니메이션을 적용해줘. [0.3]초, easeInOut 커브로."
+            prompt: "SwiftUI [적용할 대상]가 {fadeDirection} fade 애니메이션을 적용해줘. [0.3]초, easeInOut 커브로.",
+            en: AnimationLocale(
+                feel: "Gently appearing or disappearing",
+                feelDesc: "Elements fade in or out gradually — the most natural and universal transition",
+                when: "Screen transitions, overlays, toast messages",
+                prompt: "Apply a {fadeDirection} fade to [target] in SwiftUI. [0.3]s, easeInOut curve."
+            )
         ),
 
         AnimationItem(
@@ -278,7 +311,13 @@ if showSheet {
         )
 }
 """,
-            prompt: "SwiftUI [적용할 대상]가 {slideEdge}에서 slide로 나타나게 해줘. opacity 조합: {withOpacity}."
+            prompt: "SwiftUI [적용할 대상]가 {slideEdge}에서 slide로 나타나게 해줘. opacity 조합: {withOpacity}.",
+            en: AnimationLocale(
+                feel: "Sliding in from an edge",
+                feelDesc: "Screen or panel slides in or out from a specific direction",
+                when: "Bottom sheets, drawer menus, next screen navigation",
+                prompt: "Make [target] appear via slide from {slideEdge}. With opacity: {withOpacity}."
+            )
         ),
 
         AnimationItem(
@@ -323,7 +362,13 @@ if showSheet {
 .animation(.easeIn(duration: 0.2), value: state)
 .animation(.easeOut(duration: 0.25), value: state)
 """,
-            prompt: "SwiftUI [적용할 대상]에 {easeKind} 애니메이션을 적용해줘. [0.3]초로."
+            prompt: "SwiftUI [적용할 대상]에 {easeKind} 애니메이션을 적용해줘. [0.3]초로.",
+            en: AnimationLocale(
+                feel: "Slow start, fast middle, gradual stop",
+                feelDesc: "The classic S-curve timing used throughout iOS default transitions",
+                when: "Screen transitions, element movement, basic state changes",
+                prompt: "Apply {easeKind} animation to [target] in SwiftUI. [0.3]s duration."
+            )
         ),
 
         AnimationItem(
@@ -372,7 +417,13 @@ Circle()
     )
     .onAppear { isRotating = true }
 """,
-            prompt: "SwiftUI [적용할 대상]를 linear 애니메이션으로 무한 회전시켜줘. autoreverses: {autoreverses}, duration [1.0]초."
+            prompt: "SwiftUI [적용할 대상]를 linear 애니메이션으로 무한 회전시켜줘. autoreverses: {autoreverses}, duration [1.0]초.",
+            en: AnimationLocale(
+                feel: "Steady, constant speed all the way through",
+                feelDesc: "Mechanical, consistent pace — ideal for looping and repeating animations",
+                when: "Loading spinners, progress bars, continuous repeating effects",
+                prompt: "Rotate [target] infinitely with linear animation. autoreverses: {autoreverses}, [1.0]s."
+            )
         ),
 
         // ─── 조합 ────────────────────────────────────────────
@@ -431,7 +482,13 @@ Button("확인") { }
             .onEnded { _ in isPressed = false }
     )
 """,
-            prompt: "SwiftUI [적용할 대상]를 탭했을 때 살짝 눌리는 scale 피드백을 만들어줘. scaleEffect [0.92], response [0.3], dampingFraction [0.6]."
+            prompt: "SwiftUI [적용할 대상]를 탭했을 때 살짝 눌리는 scale 피드백을 만들어줘. scaleEffect [0.92], response [0.3], dampingFraction [0.6].",
+            en: AnimationLocale(
+                feel: "Feels like physically pressing down",
+                feelDesc: "Tactile press feedback when tapping a button, card, or icon",
+                when: "Tapping buttons, cards, or icons",
+                prompt: "Create a scale press feedback on [target] in SwiftUI. scaleEffect [0.92], response [0.3], dampingFraction [0.6]."
+            )
         ),
 
         AnimationItem(
@@ -484,7 +541,13 @@ TextField("비밀번호", text: $password)
         }
     }
 """,
-            prompt: "SwiftUI [적용할 대상]에서 오류 시 좌우로 흔들리는 shake 애니메이션을 만들어줘. amplitude [12]pt, duration [0.08]s."
+            prompt: "SwiftUI [적용할 대상]에서 오류 시 좌우로 흔들리는 shake 애니메이션을 만들어줘. amplitude [12]pt, duration [0.08]s.",
+            en: AnimationLocale(
+                feel: "Shaking 'no' when something's wrong",
+                feelDesc: "A quick left-right shake indicating incorrect or invalid input",
+                when: "Wrong password, invalid input fields",
+                prompt: "Create a shake error animation on [target] in SwiftUI. amplitude [12]pt, duration [0.08]s."
+            )
         ),
 
         AnimationItem(
@@ -532,7 +595,13 @@ Circle()
     )
     .onAppear { isPulsing = true }
 """,
-            prompt: "SwiftUI [적용할 대상]가 숨쉬듯 천천히 커지고 작아지는 pulse 애니메이션을 만들어줘. scaleMax [1.15], duration [1.2]초."
+            prompt: "SwiftUI [적용할 대상]가 숨쉬듯 천천히 커지고 작아지는 pulse 애니메이션을 만들어줘. scaleMax [1.15], duration [1.2]초.",
+            en: AnimationLocale(
+                feel: "Slowly expanding and contracting like breathing",
+                feelDesc: "A slow, rhythmic pulse that feels alive and organic",
+                when: "Waiting for connection, showing online or active status",
+                prompt: "Create a breathing pulse animation on [target] in SwiftUI. scaleMax [1.15], duration [1.2]s."
+            )
         ),
 
         AnimationItem(
@@ -579,7 +648,13 @@ ForEach(Array(items.enumerated()), id: \\.offset) { index, item in
         )
 }
 """,
-            prompt: "SwiftUI ForEach 리스트 아이템이 [0.06]초 간격으로 [16]pt 아래에서 순차적으로 나타나게 해줘."
+            prompt: "SwiftUI ForEach 리스트 아이템이 [0.06]초 간격으로 [16]pt 아래에서 순차적으로 나타나게 해줘.",
+            en: AnimationLocale(
+                feel: "Items appearing one by one in sequence",
+                feelDesc: "List or grid that cascades in like falling dominoes — each item delayed",
+                when: "Entering a list screen, opening a menu, grid reveal",
+                prompt: "Make ForEach list items appear sequentially in SwiftUI. [0.06]s delay, from [16]pt below."
+            )
         ),
 
         AnimationItem(
@@ -631,7 +706,13 @@ HStack(spacing: 4) {
 }
 .onAppear { isAnimating = true }
 """,
-            prompt: "SwiftUI에서 파도처럼 위아래로 움직이는 wave 이퀄라이저 애니메이션을 만들어줘. delay [0.1]초 간격, 최대 높이 [34]pt."
+            prompt: "SwiftUI에서 파도처럼 위아래로 움직이는 wave 이퀄라이저 애니메이션을 만들어줘. delay [0.1]초 간격, 최대 높이 [34]pt.",
+            en: AnimationLocale(
+                feel: "Rippling up and down like waves",
+                feelDesc: "Multiple elements moving rhythmically in staggered sequence — like an equalizer",
+                when: "Music playing indicator, voice input visualization, active state",
+                prompt: "Create a wave equalizer animation in SwiftUI. [0.1]s delay interval, max height [34]pt."
+            )
         ),
 
         AnimationItem(
@@ -676,7 +757,13 @@ if showBadge {
         .animation(.spring(bounce: 0.5), value: showBadge)
 }
 """,
-            prompt: "SwiftUI [적용할 대상]이 나타날 때 뿅 하고 통통 튀며 등장하는 pop in 애니메이션을 만들어줘. startScale [0.1], bounce [0.5]."
+            prompt: "SwiftUI [적용할 대상]이 나타날 때 뿅 하고 통통 튀며 등장하는 pop in 애니메이션을 만들어줘. startScale [0.1], bounce [0.5].",
+            en: AnimationLocale(
+                feel: "Appearing with a satisfying pop",
+                feelDesc: "Bursting from a tiny dot into full size with a springy bounce",
+                when: "Notification badges, likes, newly added items",
+                prompt: "Create a pop-in animation on [target] in SwiftUI. startScale [0.1], bounce [0.5]."
+            )
         ),
 
         AnimationItem(
@@ -731,7 +818,13 @@ if isExpanded {
         .ignoresSafeArea()
 }
 """,
-            prompt: "SwiftUI에서 카드를 탭하면 matchedGeometryEffect로 전체화면으로 확장되는 Hero 전환을 만들어줘. response [0.4], dampingFraction [0.88]."
+            prompt: "SwiftUI에서 카드를 탭하면 matchedGeometryEffect로 전체화면으로 확장되는 Hero 전환을 만들어줘. response [0.4], dampingFraction [0.88].",
+            en: AnimationLocale(
+                feel: "Card smoothly becomes the next screen",
+                feelDesc: "Shared element transition — the tapped card expands seamlessly into the detail view",
+                when: "App Store card tap, photo grid to fullscreen, list to detail",
+                prompt: "Create a Hero transition in SwiftUI using matchedGeometryEffect. response [0.4], dampingFraction [0.88]."
+            )
         ),
 
         AnimationItem(
@@ -768,6 +861,15 @@ if isExpanded {
                     desc: "0.4~0.6이 자연스러운 뒤집기 속도",
                     paramKey: "response", minValue: 0.2, maxValue: 1.0, defaultValue: 0.5, step: 0.01
                 ),
+                AnimProperty(
+                    label: "회전 기준점", key: "anchor:",
+                    desc: "중앙 = 가운데 기준 / 왼쪽 모서리 / 오른쪽 모서리",
+                    kind: .picker(key: "flipAnchor", options: [
+                        (label: "중앙", value: 0),
+                        (label: "왼쪽", value: 1),
+                        (label: "오른쪽", value: 2),
+                    ], defaultIndex: 0)
+                ),
             ],
             swiftui: """
 @State var isFlipped = false
@@ -788,7 +890,13 @@ ZStack {
 .animation(.spring(response: 0.5, dampingFraction: 0.80), value: isFlipped)
 .onTapGesture { isFlipped.toggle() }
 """,
-            prompt: "SwiftUI [적용할 대상]이 탭하면 3D로 뒤집히게 해줘. {flipAxis} 뒤집기, response [0.5]."
+            prompt: "SwiftUI [적용할 대상]이 탭하면 3D로 뒤집히게 해줘. {flipAxis} 뒤집기, response [0.5].",
+            en: AnimationLocale(
+                feel: "Card flipping over in 3D",
+                feelDesc: "3D rotation that reveals the back side of a card or view",
+                when: "Flashcards, payment card details, info reveal",
+                prompt: "Make [target] flip in 3D on tap. {flipAxis} rotation, response [0.5]."
+            )
         ),
 
         AnimationItem(
@@ -841,7 +949,13 @@ ZStack {
     }
 }
 """,
-            prompt: "SwiftUI 모달이 등장할 때 배경이 blurRadius [18]pt로 블러되고 패널이 fade in되게 해줘. 속도 [0.28]초."
+            prompt: "SwiftUI 모달이 등장할 때 배경이 blurRadius [18]pt로 블러되고 패널이 fade in되게 해줘. 속도 [0.28]초.",
+            en: AnimationLocale(
+                feel: "Background blurs as a panel emerges",
+                feelDesc: "Background blurs and content fades in as a modal or overlay appears",
+                when: "Action sheets, settings modals, confirmation dialogs",
+                prompt: "Blur the background by [18]pt and fade in the modal panel in SwiftUI. Speed [0.28]s."
+            )
         ),
 
         AnimationItem(
@@ -893,7 +1007,13 @@ Image(systemName: isFavorited ? "star.fill" : "star")
 Image(systemName: "waveform")
     .symbolEffect(.variableColor.iterative.reversing)
 """,
-            prompt: "SwiftUI [SF Symbol 이름]에 {symbolEffectKind} symbolEffect를 적용해줘. 상태 변화 시 발동."
+            prompt: "SwiftUI [SF Symbol 이름]에 {symbolEffectKind} symbolEffect를 적용해줘. 상태 변화 시 발동.",
+            en: AnimationLocale(
+                feel: "Icons that come alive",
+                feelDesc: "Built-in SF Symbols vector animation — bounce, pulse, wiggle in one line of code (iOS 17+, macOS 14+)",
+                when: "Completion/error feedback icons, favorites toggle, state change icons",
+                prompt: "Apply {symbolEffectKind} symbolEffect to [SF Symbol name] in SwiftUI. Triggers on state change."
+            )
         ),
 
         AnimationItem(
@@ -945,7 +1065,13 @@ SomeView()
             }
     )
 """,
-            prompt: "SwiftUI [적용할 대상]를 드래그하면 고무줄처럼 저항감 있게 늘어나다가 손 떼면 spring으로 복귀하게 해줘. resistanceFactor [3.0], dampingFraction [0.6]."
+            prompt: "SwiftUI [적용할 대상]를 드래그하면 고무줄처럼 저항감 있게 늘어나다가 손 떼면 spring으로 복귀하게 해줘. resistanceFactor [3.0], dampingFraction [0.6].",
+            en: AnimationLocale(
+                feel: "Stretches when pulled, snaps back on release",
+                feelDesc: "Elastic resistance when dragging past a boundary — just like iOS rubber-band scrolling",
+                when: "Pull to refresh, dismissing a bottom sheet, overscroll",
+                prompt: "Make [target] stretch with rubber-band resistance on drag, then spring back on release. resistanceFactor [3.0], dampingFraction [0.6]."
+            )
         ),
     ]
 }

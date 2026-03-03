@@ -8,6 +8,7 @@ struct AnimationCardView: View {
     var onTap: (AnimationItem) -> Void
 
     @State private var isHovered = false
+    @AppStorage("appLang") private var appLang = "ko"
 
     var body: some View {
         Button { onTap(item) } label: {
@@ -22,7 +23,7 @@ struct AnimationCardView: View {
                             bottomTrailingRadius: 0, topTrailingRadius: 12
                         ))
 
-                    Text(item.kind == .basic ? "기본" : "조합")
+                    Text(item.kind == .basic ? (appLang == "en" ? "Basic" : "기본") : (appLang == "en" ? "Combo" : "조합"))
                         .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(Color.textTertiary)
                         .padding(.horizontal, 7).padding(.vertical, 3)
@@ -39,7 +40,7 @@ struct AnimationCardView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
 
-                    Text(item.feel)
+                    Text(item.localFeel(appLang))
                         .font(.system(size: 11))
                         .foregroundStyle(Color.textTertiary)
                         .lineLimit(2)
