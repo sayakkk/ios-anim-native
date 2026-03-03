@@ -1,7 +1,6 @@
 # iOS 움직임 사전
 ### A macOS reference app for iOS/macOS SwiftUI animations — built for designers and developers
-<img width="1310" height="893" alt="스크린샷 2026-03-03 오후 2 07 12" src="https://github.com/user-attachments/assets/113369e6-c638-46ef-b466-abfdf3bcd429" />
-
+![demo](https://github.com/user-attachments/assets/cce3629d-56f3-4e69-84fc-a03b945ba21e)
 
 
 ---
