@@ -10,7 +10,7 @@
 
 **iOS 움직임 사전** is a native macOS app that serves as an interactive animation reference for designers and developers working with SwiftUI. Instead of memorizing parameter names or digging through documentation, you can feel each animation in real time, tweak its properties with sliders, and instantly copy a ready-to-use AI prompt or SwiftUI code snippet.
 
-The app prioritizes **feel over technical naming** — animations are described by what they feel like ("통통 튀며 제자리 잡는 느낌") rather than their API names, making it approachable for designers who don't write code.
+The app prioritizes **feel over technical naming** — animations are described by what they feel like ("통통 튀며 제자리 잡는 느낌") rather than their API names, making it approachable for designers who don't write code. (KO/EN available)
 
 ---
 
